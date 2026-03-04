@@ -19,12 +19,12 @@ export const Type = IDL.Variant({
   'open' : IDL.Null,
   'inProgress' : IDL.Null,
 });
-export const Type__3 = IDL.Variant({
+export const Type__1 = IDL.Variant({
   'admin' : IDL.Null,
   'staff' : IDL.Null,
   'student' : IDL.Null,
 });
-export const Type__1 = IDL.Variant({
+export const Type__2 = IDL.Variant({
   'itTechnical' : IDL.Null,
   'other' : IDL.Null,
   'administrative' : IDL.Null,
@@ -33,7 +33,7 @@ export const Type__1 = IDL.Variant({
   'infrastructure' : IDL.Null,
   'facultyConduct' : IDL.Null,
 });
-export const Type__2 = IDL.Variant({
+export const Type__3 = IDL.Variant({
   'low' : IDL.Null,
   'high' : IDL.Null,
   'urgent' : IDL.Null,
@@ -44,17 +44,43 @@ export const Complaint = IDL.Record({
   'status' : Type,
   'title' : IDL.Text,
   'submitterName' : IDL.Text,
-  'submitterRole' : Type__3,
+  'submitterType' : Type__1,
+  'referenceNumber' : IDL.Text,
   'assignedTo' : IDL.Opt(IDL.Text),
   'createdAt' : IDL.Int,
   'submittedBy' : IDL.Principal,
   'description' : IDL.Text,
   'updatedAt' : IDL.Int,
-  'category' : Type__1,
-  'priority' : Type__2,
+  'category' : Type__2,
+  'submittedByUserId' : IDL.Text,
+  'priority' : Type__3,
   'adminResponse' : IDL.Opt(IDL.Text),
 });
-export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const Result_2 = IDL.Variant({
+  'ok' : IDL.Vec(Complaint),
+  'err' : IDL.Variant({
+    'alreadyExists' : IDL.Null,
+    'invalidInput' : IDL.Null,
+    'notFound' : IDL.Null,
+    'internalError' : IDL.Null,
+    'unauthorized' : IDL.Null,
+  }),
+});
+export const UserProfile = IDL.Record({
+  'userId' : IDL.Text,
+  'name' : IDL.Text,
+  'role' : Type__1,
+});
+export const Result_5 = IDL.Variant({
+  'ok' : Complaint,
+  'err' : IDL.Variant({
+    'alreadyExists' : IDL.Null,
+    'invalidInput' : IDL.Null,
+    'notFound' : IDL.Null,
+    'internalError' : IDL.Null,
+    'unauthorized' : IDL.Null,
+  }),
+});
 export const ComplaintStats = IDL.Record({
   'resolved' : IDL.Nat,
   'closed' : IDL.Nat,
@@ -62,39 +88,77 @@ export const ComplaintStats = IDL.Record({
   'open' : IDL.Nat,
   'inProgress' : IDL.Nat,
 });
-export const SubmitComplaintRequest = IDL.Record({
-  'title' : IDL.Text,
-  'submitterName' : IDL.Text,
-  'submitterRole' : Type__3,
-  'description' : IDL.Text,
-  'category' : Type__1,
-  'priority' : Type__2,
+export const Result_4 = IDL.Variant({
+  'ok' : ComplaintStats,
+  'err' : IDL.Variant({
+    'alreadyExists' : IDL.Null,
+    'invalidInput' : IDL.Null,
+    'notFound' : IDL.Null,
+    'internalError' : IDL.Null,
+    'unauthorized' : IDL.Null,
+  }),
 });
-export const UpdateStatusRequest = IDL.Record({
-  'id' : IDL.Nat,
-  'assignedTo' : IDL.Opt(IDL.Text),
-  'newStatus' : Type,
-  'adminResponse' : IDL.Opt(IDL.Text),
+export const Result_3 = IDL.Variant({
+  'ok' : IDL.Nat,
+  'err' : IDL.Variant({
+    'alreadyExists' : IDL.Null,
+    'invalidInput' : IDL.Null,
+    'notFound' : IDL.Null,
+    'internalError' : IDL.Null,
+    'unauthorized' : IDL.Null,
+  }),
+});
+export const Result_1 = IDL.Variant({
+  'ok' : IDL.Text,
+  'err' : IDL.Variant({
+    'alreadyExists' : IDL.Null,
+    'invalidInput' : IDL.Null,
+    'notFound' : IDL.Null,
+    'internalError' : IDL.Null,
+    'unauthorized' : IDL.Null,
+  }),
+});
+export const Result = IDL.Variant({
+  'ok' : IDL.Record({}),
+  'err' : IDL.Variant({
+    'alreadyExists' : IDL.Null,
+    'invalidInput' : IDL.Null,
+    'notFound' : IDL.Null,
+    'internalError' : IDL.Null,
+    'unauthorized' : IDL.Null,
+  }),
 });
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'getAllComplaints' : IDL.Func([], [IDL.Vec(Complaint)], ['query']),
+  'getAllComplaints' : IDL.Func([], [Result_2], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getComplaintById' : IDL.Func([IDL.Nat], [IDL.Opt(Complaint)], ['query']),
-  'getComplaintStats' : IDL.Func([], [ComplaintStats], ['query']),
-  'getMyComplaints' : IDL.Func([], [IDL.Vec(Complaint)], ['query']),
+  'getComplaintById' : IDL.Func([IDL.Nat], [Result_5], ['query']),
+  'getComplaintStats' : IDL.Func([], [Result_4], ['query']),
+  'getMyComplaintCount' : IDL.Func([], [Result_3], ['query']),
+  'getMyComplaints' : IDL.Func([], [Result_2], ['query']),
+  'getUserInfo' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'isFirstTimeUser' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+  'registerUser' : IDL.Func([IDL.Text, IDL.Text, Type__1], [Result_1], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-  'submitComplaint' : IDL.Func([SubmitComplaintRequest], [IDL.Nat], []),
-  'updateComplaintStatus' : IDL.Func([UpdateStatusRequest], [], []),
+  'submitComplaint' : IDL.Func(
+      [IDL.Text, Type__1, Type__2, IDL.Text, IDL.Text, Type__3],
+      [Result_1],
+      [],
+    ),
+  'updateComplaintStatus' : IDL.Func(
+      [IDL.Nat, Type, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
+      [Result],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
@@ -111,12 +175,12 @@ export const idlFactory = ({ IDL }) => {
     'open' : IDL.Null,
     'inProgress' : IDL.Null,
   });
-  const Type__3 = IDL.Variant({
+  const Type__1 = IDL.Variant({
     'admin' : IDL.Null,
     'staff' : IDL.Null,
     'student' : IDL.Null,
   });
-  const Type__1 = IDL.Variant({
+  const Type__2 = IDL.Variant({
     'itTechnical' : IDL.Null,
     'other' : IDL.Null,
     'administrative' : IDL.Null,
@@ -125,7 +189,7 @@ export const idlFactory = ({ IDL }) => {
     'infrastructure' : IDL.Null,
     'facultyConduct' : IDL.Null,
   });
-  const Type__2 = IDL.Variant({
+  const Type__3 = IDL.Variant({
     'low' : IDL.Null,
     'high' : IDL.Null,
     'urgent' : IDL.Null,
@@ -136,17 +200,43 @@ export const idlFactory = ({ IDL }) => {
     'status' : Type,
     'title' : IDL.Text,
     'submitterName' : IDL.Text,
-    'submitterRole' : Type__3,
+    'submitterType' : Type__1,
+    'referenceNumber' : IDL.Text,
     'assignedTo' : IDL.Opt(IDL.Text),
     'createdAt' : IDL.Int,
     'submittedBy' : IDL.Principal,
     'description' : IDL.Text,
     'updatedAt' : IDL.Int,
-    'category' : Type__1,
-    'priority' : Type__2,
+    'category' : Type__2,
+    'submittedByUserId' : IDL.Text,
+    'priority' : Type__3,
     'adminResponse' : IDL.Opt(IDL.Text),
   });
-  const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const Result_2 = IDL.Variant({
+    'ok' : IDL.Vec(Complaint),
+    'err' : IDL.Variant({
+      'alreadyExists' : IDL.Null,
+      'invalidInput' : IDL.Null,
+      'notFound' : IDL.Null,
+      'internalError' : IDL.Null,
+      'unauthorized' : IDL.Null,
+    }),
+  });
+  const UserProfile = IDL.Record({
+    'userId' : IDL.Text,
+    'name' : IDL.Text,
+    'role' : Type__1,
+  });
+  const Result_5 = IDL.Variant({
+    'ok' : Complaint,
+    'err' : IDL.Variant({
+      'alreadyExists' : IDL.Null,
+      'invalidInput' : IDL.Null,
+      'notFound' : IDL.Null,
+      'internalError' : IDL.Null,
+      'unauthorized' : IDL.Null,
+    }),
+  });
   const ComplaintStats = IDL.Record({
     'resolved' : IDL.Nat,
     'closed' : IDL.Nat,
@@ -154,39 +244,77 @@ export const idlFactory = ({ IDL }) => {
     'open' : IDL.Nat,
     'inProgress' : IDL.Nat,
   });
-  const SubmitComplaintRequest = IDL.Record({
-    'title' : IDL.Text,
-    'submitterName' : IDL.Text,
-    'submitterRole' : Type__3,
-    'description' : IDL.Text,
-    'category' : Type__1,
-    'priority' : Type__2,
+  const Result_4 = IDL.Variant({
+    'ok' : ComplaintStats,
+    'err' : IDL.Variant({
+      'alreadyExists' : IDL.Null,
+      'invalidInput' : IDL.Null,
+      'notFound' : IDL.Null,
+      'internalError' : IDL.Null,
+      'unauthorized' : IDL.Null,
+    }),
   });
-  const UpdateStatusRequest = IDL.Record({
-    'id' : IDL.Nat,
-    'assignedTo' : IDL.Opt(IDL.Text),
-    'newStatus' : Type,
-    'adminResponse' : IDL.Opt(IDL.Text),
+  const Result_3 = IDL.Variant({
+    'ok' : IDL.Nat,
+    'err' : IDL.Variant({
+      'alreadyExists' : IDL.Null,
+      'invalidInput' : IDL.Null,
+      'notFound' : IDL.Null,
+      'internalError' : IDL.Null,
+      'unauthorized' : IDL.Null,
+    }),
+  });
+  const Result_1 = IDL.Variant({
+    'ok' : IDL.Text,
+    'err' : IDL.Variant({
+      'alreadyExists' : IDL.Null,
+      'invalidInput' : IDL.Null,
+      'notFound' : IDL.Null,
+      'internalError' : IDL.Null,
+      'unauthorized' : IDL.Null,
+    }),
+  });
+  const Result = IDL.Variant({
+    'ok' : IDL.Record({}),
+    'err' : IDL.Variant({
+      'alreadyExists' : IDL.Null,
+      'invalidInput' : IDL.Null,
+      'notFound' : IDL.Null,
+      'internalError' : IDL.Null,
+      'unauthorized' : IDL.Null,
+    }),
   });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'getAllComplaints' : IDL.Func([], [IDL.Vec(Complaint)], ['query']),
+    'getAllComplaints' : IDL.Func([], [Result_2], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getComplaintById' : IDL.Func([IDL.Nat], [IDL.Opt(Complaint)], ['query']),
-    'getComplaintStats' : IDL.Func([], [ComplaintStats], ['query']),
-    'getMyComplaints' : IDL.Func([], [IDL.Vec(Complaint)], ['query']),
+    'getComplaintById' : IDL.Func([IDL.Nat], [Result_5], ['query']),
+    'getComplaintStats' : IDL.Func([], [Result_4], ['query']),
+    'getMyComplaintCount' : IDL.Func([], [Result_3], ['query']),
+    'getMyComplaints' : IDL.Func([], [Result_2], ['query']),
+    'getUserInfo' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'isFirstTimeUser' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
+    'registerUser' : IDL.Func([IDL.Text, IDL.Text, Type__1], [Result_1], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
-    'submitComplaint' : IDL.Func([SubmitComplaintRequest], [IDL.Nat], []),
-    'updateComplaintStatus' : IDL.Func([UpdateStatusRequest], [], []),
+    'submitComplaint' : IDL.Func(
+        [IDL.Text, Type__1, Type__2, IDL.Text, IDL.Text, Type__3],
+        [Result_1],
+        [],
+      ),
+    'updateComplaintStatus' : IDL.Func(
+        [IDL.Nat, Type, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
+        [Result],
+        [],
+      ),
   });
 };
 

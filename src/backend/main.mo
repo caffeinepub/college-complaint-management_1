@@ -1,34 +1,43 @@
-import Time "mo:core/Time";
-import List "mo:core/List";
 import Map "mo:core/Map";
+import Iter "mo:core/Iter";
+import Time "mo:core/Time";
+import Text "mo:core/Text";
+import Array "mo:core/Array";
+import Runtime "mo:core/Runtime";
 import Nat "mo:core/Nat";
 import Int "mo:core/Int";
-import Text "mo:core/Text";
 import Order "mo:core/Order";
-import Runtime "mo:core/Runtime";
-import Iter "mo:core/Iter";
 import Principal "mo:core/Principal";
+import VarArray "mo:core/VarArray";
+import Char "mo:core/Char";
+import Migration "migration";
+
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 
+// apply data migration in special with-clause
+(with migration = Migration.run)
 actor {
+  // Initialize the access control system
+  let accessControlState = AccessControl.initState();
+  include MixinAuthorization(accessControlState);
+
+  public type Result<T> = {
+    #ok : T;
+    #err : {
+      #unauthorized;
+      #notFound;
+      #alreadyExists;
+      #invalidInput;
+      #internalError;
+    };
+  };
+
   module Role {
     public type Type = {
       #student;
       #staff;
       #admin;
-    };
-
-    public func compare(role1 : Type, role2 : Type) : Order.Order {
-      switch (role1, role2) {
-        case (#admin, #admin) { #equal };
-        case (#admin, _) { #less };
-        case (#staff, #admin) { #greater };
-        case (#staff, #staff) { #equal };
-        case (#staff, #student) { #less };
-        case (#student, #student) { #equal };
-        case (#student, _) { #greater };
-      };
     };
   };
 
@@ -42,32 +51,6 @@ actor {
       #itTechnical;
       #other;
     };
-
-    public func compare(category1 : Type, category2 : Type) : Order.Order {
-      switch (category1, category2) {
-        case (#academic, #academic) { #equal };
-        case (#academic, _) { #less };
-        case (#administrative, #academic) { #greater };
-        case (#administrative, #administrative) { #equal };
-        case (#administrative, _) { #less };
-        case (#facultyConduct, #academic) { #greater };
-        case (#facultyConduct, #administrative) { #greater };
-        case (#facultyConduct, #facultyConduct) { #equal };
-        case (#facultyConduct, _) { #less };
-        case (#hostelCanteen, #other) { #less };
-        case (#hostelCanteen, #hostelCanteen) { #equal };
-        case (#hostelCanteen, _) { #greater };
-        case (#infrastructure, #academic) { #greater };
-        case (#infrastructure, #administrative) { #greater };
-        case (#infrastructure, #infrastructure) { #equal };
-        case (#infrastructure, _) { #less };
-        case (#itTechnical, #other) { #less };
-        case (#itTechnical, #hostelCanteen) { #greater };
-        case (#itTechnical, #itTechnical) { #equal };
-        case (#other, #other) { #equal };
-        case (#other, _) { #greater };
-      };
-    };
   };
 
   module Priority {
@@ -76,21 +59,6 @@ actor {
       #medium;
       #high;
       #urgent;
-    };
-
-    public func compare(priority1 : Type, priority2 : Type) : Order.Order {
-      switch (priority1, priority2) {
-        case (#low, #low) { #equal };
-        case (#low, _) { #less };
-        case (#medium, #low) { #greater };
-        case (#medium, #medium) { #equal };
-        case (#medium, _) { #less };
-        case (#high, #urgent) { #less };
-        case (#high, #high) { #equal };
-        case (#high, _) { #greater };
-        case (#urgent, #urgent) { #equal };
-        case (#urgent, _) { #greater };
-      };
     };
   };
 
@@ -101,28 +69,21 @@ actor {
       #resolved;
       #closed;
     };
+  };
 
-    public func compare(status1 : Type, status2 : Type) : Order.Order {
-      switch (status1, status2) {
-        case (#open, #open) { #equal };
-        case (#open, _) { #less };
-        case (#inProgress, #open) { #greater };
-        case (#inProgress, #inProgress) { #equal };
-        case (#inProgress, _) { #less };
-        case (#resolved, #closed) { #less };
-        case (#resolved, #resolved) { #equal };
-        case (#resolved, _) { #greater };
-        case (#closed, #closed) { #equal };
-        case (#closed, _) { #greater };
-      };
-    };
+  public type UserProfile = {
+    name : Text;
+    role : Role.Type;
+    userId : Text;
   };
 
   public type Complaint = {
     id : Nat;
+    referenceNumber : Text;
     submittedBy : Principal;
+    submittedByUserId : Text;
     submitterName : Text;
-    submitterRole : Role.Type;
+    submitterType : Role.Type;
     category : Category.Type;
     title : Text;
     description : Text;
@@ -134,27 +95,46 @@ actor {
     assignedTo : ?Text;
   };
 
-  module Complaint {
-    public func compare(complaint1 : Complaint, complaint2 : Complaint) : Order.Order {
-      Nat.compare(complaint1.id, complaint2.id);
-    };
-  };
-
-  let complaints = Map.empty<Nat, Complaint>();
-  var nextComplaintId = 1;
-
-  let accessControlState = AccessControl.initState();
-  include MixinAuthorization(accessControlState);
-
-  public type UserProfile = {
-    name : Text;
+  public type ComplaintStats = {
+    total : Nat;
+    open : Nat;
+    inProgress : Nat;
+    resolved : Nat;
+    closed : Nat;
   };
 
   let userProfiles = Map.empty<Principal, UserProfile>();
+  let complaints = Map.empty<Nat, Complaint>();
+  var nextComplaintId : Nat = 1;
+
+  // Helper function to check if user has a profile (registered)
+  func isRegistered(caller : Principal) : Bool {
+    switch (userProfiles.get(caller)) {
+      case (?_) { true };
+      case (null) { false };
+    };
+  };
+
+  // Helper function to get user profile
+  func getUserProfileInternal(caller : Principal) : ?UserProfile {
+    userProfiles.get(caller);
+  };
+
+  func formatReferenceNumber(id : Nat) : Text {
+    let idText = id.toText();
+    let padding = if (idText.size() < 6) {
+      Text.fromVarArray(VarArray.repeat('0', 6 - idText.size()));
+    } else {
+      "";
+    };
+    "ADITYA#" # padding # idText;
+  };
+
+  // ============ USER PROFILE MANAGEMENT ============
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access profiles");
+      Runtime.trap("Unauthorized: Only users can view profiles");
     };
     userProfiles.get(caller);
   };
@@ -173,55 +153,105 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  public type SubmitComplaintRequest = {
-    submitterName : Text;
-    submitterRole : Role.Type;
-    category : Category.Type;
-    title : Text;
-    description : Text;
-    priority : Priority.Type;
+  // ============ REGISTRATION ============
+
+  public shared ({ caller }) func registerUser(userId : Text, name : Text, userType : Role.Type) : async Result<Text> {
+    let trimmedUserId = userId.trim(#char ' ');
+    let trimmedName = name.trim(#char ' ');
+
+    if (trimmedUserId.size() < 3 or trimmedName.size() < 3) {
+      return #err(#invalidInput);
+    };
+
+    // Check if already registered
+    switch (userProfiles.get(caller)) {
+      case (?_) {
+        return #err(#alreadyExists);
+      };
+      case (null) {};
+    };
+
+    let profile : UserProfile = {
+      name = trimmedName;
+      role = userType;
+      userId = trimmedUserId;
+    };
+
+    userProfiles.add(caller, profile);
+
+    // Assign appropriate role in AccessControl
+    let accessRole = switch (userType) {
+      case (#admin) { #admin };
+      case (#staff) { #user };
+      case (#student) { #user };
+    };
+    AccessControl.assignRole(accessControlState, caller, caller, accessRole);
+
+    #ok(trimmedUserId);
   };
 
-  public type UpdateStatusRequest = {
-    id : Nat;
-    newStatus : Status.Type;
-    adminResponse : ?Text;
-    assignedTo : ?Text;
-  };
+  // ============ USER INFO ============
 
-  public type ComplaintStats = {
-    total : Nat;
-    open : Nat;
-    inProgress : Nat;
-    resolved : Nat;
-    closed : Nat;
-  };
-
-  public type Error = {
-    #unauthorized;
-    #notFound;
-    #invalidInput;
-    #internalError;
-    #alreadyExists;
-  };
-
-  public shared ({ caller }) func submitComplaint(request : SubmitComplaintRequest) : async Nat {
+  public query ({ caller }) func getUserInfo() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can submit complaints");
+      return null;
+    };
+    userProfiles.get(caller);
+  };
+
+  public query ({ caller }) func isFirstTimeUser(userId : Text) : async Bool {
+    // Anyone can check if a userId is registered (for registration flow)
+    // This is safe as it only reveals if a userId exists, not sensitive data
+    let allProfiles = userProfiles.values().toArray();
+    let found = allProfiles.find(func(p) { p.userId == userId });
+    switch (found) {
+      case (?_) { false };
+      case (null) { true };
+    };
+  };
+
+  // ============ COMPLAINT SUBMISSION ============
+
+  public shared ({ caller }) func submitComplaint(
+    submitterName : Text,
+    submitterType : Role.Type,
+    category : Category.Type,
+    title : Text,
+    description : Text,
+    priority : Priority.Type,
+  ) : async Result<Text> {
+    // Only registered users can submit complaints
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      return #err(#unauthorized);
+    };
+
+    // Verify user is registered
+    let userProfile = switch (userProfiles.get(caller)) {
+      case (?profile) { profile };
+      case (null) { return #err(#unauthorized) };
+    };
+
+    // Admins should not submit complaints as students/staff
+    if (AccessControl.isAdmin(accessControlState, caller) and submitterType != #admin) {
+      return #err(#unauthorized);
     };
 
     let id = nextComplaintId;
     nextComplaintId += 1;
 
+    let referenceNumber = formatReferenceNumber(id);
+
     let complaint : Complaint = {
       id;
+      referenceNumber;
       submittedBy = caller;
-      submitterName = request.submitterName;
-      submitterRole = request.submitterRole;
-      category = request.category;
-      title = request.title;
-      description = request.description;
-      priority = request.priority;
+      submittedByUserId = userProfile.userId;
+      submitterName;
+      submitterType;
+      category;
+      title;
+      description;
+      priority;
       status = #open;
       createdAt = Time.now();
       updatedAt = Time.now();
@@ -230,112 +260,120 @@ actor {
     };
 
     complaints.add(id, complaint);
-    id;
+    #ok(referenceNumber);
   };
 
-  public query ({ caller }) func getMyComplaints() : async [Complaint] {
+  // ============ VIEW OWN COMPLAINTS ============
+
+  public query ({ caller }) func getMyComplaints() : async Result<[Complaint]> {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can view their complaints");
+      return #err(#unauthorized);
     };
 
-    complaints.values().toArray().filter(
-      func(complaint) {
-        complaint.submittedBy == caller
-      }
+    let filteredComplaints = complaints.values().toArray().filter(
+      func(complaint : Complaint) : Bool { complaint.submittedBy == caller }
     );
+    #ok(filteredComplaints);
   };
 
-  public query ({ caller }) func getAllComplaints() : async [Complaint] {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admins can view all complaints");
+  public query ({ caller }) func getMyComplaintCount() : async Result<Nat> {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      return #err(#unauthorized);
     };
 
-    complaints.values().toArray();
+    let count = complaints.values().toArray().filter(
+      func(complaint : Complaint) : Bool { complaint.submittedBy == caller }
+    ).size();
+    #ok(count);
   };
 
-  public shared ({ caller }) func updateComplaintStatus(request : UpdateStatusRequest) : async () {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admins can update complaint status");
+  // ============ ADMIN: VIEW ALL COMPLAINTS ============
+
+  public query ({ caller }) func getAllComplaints() : async Result<[Complaint]> {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      return #err(#unauthorized);
     };
 
-    switch (complaints.get(request.id)) {
+    #ok(complaints.values().toArray());
+  };
+
+  // ============ ADMIN: UPDATE COMPLAINT STATUS ============
+
+  public shared ({ caller }) func updateComplaintStatus(
+    complaintId : Nat,
+    newStatus : Status.Type,
+    adminResponse : ?Text,
+    assignedTo : ?Text,
+  ) : async Result<{}> {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      return #err(#unauthorized);
+    };
+
+    switch (complaints.get(complaintId)) {
       case (?complaint) {
         let updatedComplaint : Complaint = {
           id = complaint.id;
+          referenceNumber = complaint.referenceNumber;
           submittedBy = complaint.submittedBy;
+          submittedByUserId = complaint.submittedByUserId;
           submitterName = complaint.submitterName;
-          submitterRole = complaint.submitterRole;
+          submitterType = complaint.submitterType;
           category = complaint.category;
           title = complaint.title;
           description = complaint.description;
           priority = complaint.priority;
-          status = request.newStatus;
+          status = newStatus;
           createdAt = complaint.createdAt;
           updatedAt = Time.now();
-          adminResponse = request.adminResponse;
-          assignedTo = request.assignedTo;
+          adminResponse;
+          assignedTo;
         };
 
-        complaints.add(request.id, updatedComplaint);
+        complaints.add(complaintId, updatedComplaint);
+        #ok({});
       };
       case (null) {
-        Runtime.trap("Complaint not found");
+        #err(#notFound);
       };
     };
   };
 
-  public query ({ caller }) func getComplaintStats() : async ComplaintStats {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admins can view stats");
+  // ============ ADMIN: GET COMPLAINT STATS ============
+
+  public query ({ caller }) func getComplaintStats() : async Result<ComplaintStats> {
+    if (not (AccessControl.isAdmin(accessControlState, caller))) {
+      return #err(#unauthorized);
     };
 
     let allComplaints = complaints.values().toArray();
-    let total = allComplaints.size();
-
-    let open = allComplaints.filter(
-      func(c) {
-        c.status == #open;
-      }
-    ).size();
-
-    let inProgress = allComplaints.filter(
-      func(c) {
-        c.status == #inProgress;
-      }
-    ).size();
-
-    let resolved = allComplaints.filter(
-      func(c) {
-        c.status == #resolved;
-      }
-    ).size();
-
-    let closed = allComplaints.filter(
-      func(c) {
-        c.status == #closed;
-      }
-    ).size();
-
-    {
-      total;
-      open;
-      inProgress;
-      resolved;
-      closed;
+    let stats : ComplaintStats = {
+      total = allComplaints.size();
+      open = allComplaints.filter(func(c : Complaint) : Bool { c.status == #open }).size();
+      inProgress = allComplaints.filter(func(c : Complaint) : Bool { c.status == #inProgress }).size();
+      resolved = allComplaints.filter(func(c : Complaint) : Bool { c.status == #resolved }).size();
+      closed = allComplaints.filter(func(c : Complaint) : Bool { c.status == #closed }).size();
     };
+    #ok(stats);
   };
 
-  public query ({ caller }) func getComplaintById(id : Nat) : async ?Complaint {
+  // ============ GET COMPLAINT BY ID ============
+
+  public query ({ caller }) func getComplaintById(id : Nat) : async Result<Complaint> {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      return #err(#unauthorized);
+    };
+
     switch (complaints.get(id)) {
       case (?complaint) {
+        // Users can only view their own complaints, admins can view all
         if (complaint.submittedBy == caller or AccessControl.isAdmin(accessControlState, caller)) {
-          ?complaint;
+          #ok(complaint);
         } else {
-          Runtime.trap("Unauthorized: Can only view your own complaints");
+          #err(#unauthorized);
         };
       };
       case (null) {
-        null;
+        #err(#notFound);
       };
     };
   };

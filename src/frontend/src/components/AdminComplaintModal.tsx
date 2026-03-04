@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Loader2, Save, X } from "lucide-react";
+import { CheckCircle2, Hash, Loader2, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { type Complaint, Type } from "../backend.d";
@@ -89,10 +89,13 @@ export function AdminComplaintModal({
         <DialogHeader>
           <div className="flex items-start gap-3">
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-mono text-muted-foreground">
-                  #{Number(complaint.id).toString().padStart(4, "0")}
-                </span>
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-md px-2.5 py-1">
+                  <Hash className="w-3 h-3 text-primary" />
+                  <span className="text-xs font-mono font-bold text-primary">
+                    {complaint.referenceNumber}
+                  </span>
+                </div>
                 <StatusBadge status={complaint.status} />
                 <PriorityBadge priority={complaint.priority} />
               </div>
@@ -101,7 +104,7 @@ export function AdminComplaintModal({
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground mt-1 font-ui">
                 Submitted by {complaint.submitterName} (
-                {ROLE_LABELS[complaint.submitterRole]}) on{" "}
+                {ROLE_LABELS[complaint.submitterType]}) on{" "}
                 {formatDate(complaint.createdAt)}
               </DialogDescription>
             </div>
@@ -146,7 +149,7 @@ export function AdminComplaintModal({
                 onValueChange={(v) => setStatus(v as unknown as Type)}
               >
                 <SelectTrigger
-                  data-ocid="admin_complaint.status_select"
+                  data-ocid="admin_complaint.select"
                   className="font-ui"
                 >
                   <SelectValue />
@@ -174,7 +177,7 @@ export function AdminComplaintModal({
               </Label>
               <Input
                 id="assigned-to"
-                data-ocid="admin_complaint.assigned_input"
+                data-ocid="admin_complaint.input"
                 placeholder="e.g. Dr. Ramesh Kumar, HOD"
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
@@ -195,7 +198,7 @@ export function AdminComplaintModal({
               </Label>
               <Textarea
                 id="admin-response"
-                data-ocid="admin_complaint.response_textarea"
+                data-ocid="admin_complaint.textarea"
                 placeholder="Provide a response or resolution details..."
                 value={adminResponse}
                 onChange={(e) => setAdminResponse(e.target.value)}

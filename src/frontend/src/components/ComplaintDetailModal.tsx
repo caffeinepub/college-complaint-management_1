@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, MessageSquare, Tag, User, UserCheck, X } from "lucide-react";
+import { Calendar, Hash, MessageSquare, Tag, UserCheck, X } from "lucide-react";
 import type { Complaint } from "../backend.d";
 import {
   CATEGORY_LABELS,
@@ -38,10 +38,13 @@ export function ComplaintDetailModal({
         <DialogHeader>
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-mono text-muted-foreground font-medium">
-                  #{Number(complaint.id).toString().padStart(4, "0")}
-                </span>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 rounded-md px-2.5 py-1">
+                  <Hash className="w-3 h-3 text-primary" />
+                  <span className="text-xs font-mono font-bold text-primary">
+                    {complaint.referenceNumber}
+                  </span>
+                </div>
                 <StatusBadge status={complaint.status} />
                 <PriorityBadge priority={complaint.priority} />
               </div>
@@ -77,8 +80,12 @@ export function ComplaintDetailModal({
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm">
-              <User className="w-4 h-4 text-muted-foreground shrink-0" />
+            <div className="flex items-center gap-2 text-sm col-span-2">
+              <div className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="text-[8px] font-bold text-primary">
+                  {complaint.submitterName.charAt(0).toUpperCase()}
+                </span>
+              </div>
               <div>
                 <p className="text-xs text-muted-foreground font-ui">
                   Submitted by
@@ -86,13 +93,13 @@ export function ComplaintDetailModal({
                 <p className="font-ui font-medium text-xs">
                   {complaint.submitterName}{" "}
                   <span className="text-muted-foreground">
-                    ({ROLE_LABELS[complaint.submitterRole]})
+                    ({ROLE_LABELS[complaint.submitterType]})
                   </span>
                 </p>
               </div>
             </div>
             {complaint.assignedTo && (
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 text-sm col-span-2">
                 <UserCheck className="w-4 h-4 text-muted-foreground shrink-0" />
                 <div>
                   <p className="text-xs text-muted-foreground font-ui">

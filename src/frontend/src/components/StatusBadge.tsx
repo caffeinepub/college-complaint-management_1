@@ -1,4 +1,4 @@
-import type { Type, Type__2 } from "../backend.d";
+import type { Type, Type__3 } from "../backend.d";
 import {
   PRIORITY_CLASS,
   PRIORITY_LABELS,
@@ -23,7 +23,7 @@ export function StatusBadge({ status, className = "" }: StatusBadgeProps) {
 }
 
 interface PriorityBadgeProps {
-  priority: Type__2;
+  priority: Type__3;
   className?: string;
 }
 

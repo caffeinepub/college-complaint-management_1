@@ -17,29 +17,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
   ClipboardList,
   Clock,
   FileText,
   Filter,
+  Hash,
   InboxIcon,
   LayoutDashboard,
   LogOut,
   Menu,
   Pencil,
+  School,
   Search,
-  ShieldCheck,
   X,
   XCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useMemo, useState } from "react";
-import type { Complaint, Type, Type__1, Type__2 } from "../backend.d";
+import type { Complaint, Type, Type__2, Type__3 } from "../backend.d";
 import { AdminComplaintModal } from "../components/AdminComplaintModal";
 import { PriorityBadge, StatusBadge } from "../components/StatusBadge";
-import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useGetAllComplaints, useGetComplaintStats } from "../hooks/useQueries";
 import {
   CATEGORY_LABELS,
@@ -51,7 +50,11 @@ import {
 
 type NavTab = "dashboard" | "complaints";
 
-export function AdminDashboard() {
+interface AdminDashboardProps {
+  onLogout: () => void;
+}
+
+export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const { data: complaints = [], isLoading: complaintsLoading } =
     useGetAllComplaints();
   const { data: stats, isLoading: statsLoading } = useGetComplaintStats();
@@ -61,18 +64,10 @@ export function AdminDashboard() {
     null,
   );
   const [filterStatus, setFilterStatus] = useState<Type | "all">("all");
-  const [filterCategory, setFilterCategory] = useState<Type__1 | "all">("all");
-  const [filterPriority, setFilterPriority] = useState<Type__2 | "all">("all");
+  const [filterCategory, setFilterCategory] = useState<Type__2 | "all">("all");
+  const [filterPriority, setFilterPriority] = useState<Type__3 | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const { clear } = useInternetIdentity();
-  const queryClient = useQueryClient();
-
-  const handleLogout = () => {
-    clear();
-    queryClient.clear();
-  };
 
   const filteredComplaints = useMemo(() => {
     return complaints.filter((c) => {
@@ -85,7 +80,8 @@ export function AdminDashboard() {
         const q = searchQuery.toLowerCase();
         if (
           !c.title.toLowerCase().includes(q) &&
-          !c.submitterName.toLowerCase().includes(q)
+          !c.submitterName.toLowerCase().includes(q) &&
+          !c.referenceNumber.toLowerCase().includes(q)
         )
           return false;
       }
@@ -139,13 +135,18 @@ export function AdminDashboard() {
   const SidebarContent = () => (
     <nav className="flex flex-col h-full py-6 px-3">
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-3 mb-8">
+      <div className="flex items-center gap-2.5 px-3 mb-2">
         <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
-          <ShieldCheck className="w-4 h-4 text-white" />
+          <School className="w-4 h-4 text-white" />
         </div>
-        <span className="font-display font-bold text-base text-sidebar-foreground tracking-tight">
-          GrievanceHub
-        </span>
+        <div>
+          <span className="font-display font-bold text-sm text-sidebar-foreground tracking-tight leading-tight block">
+            Aditya University
+          </span>
+          <span className="text-[10px] text-sidebar-foreground/50 font-ui leading-tight block">
+            CMS
+          </span>
+        </div>
       </div>
 
       {/* Admin badge */}
@@ -159,7 +160,7 @@ export function AdminDashboard() {
       <div className="space-y-1">
         <button
           type="button"
-          data-ocid="admin_dashboard.page"
+          data-ocid="admin_dashboard.tab"
           onClick={() => {
             setActiveTab("dashboard");
             setSidebarOpen(false);
@@ -175,7 +176,7 @@ export function AdminDashboard() {
         </button>
         <button
           type="button"
-          data-ocid="admin_dashboard.complaints_tab"
+          data-ocid="admin_dashboard.tab"
           onClick={() => {
             setActiveTab("complaints");
             setSidebarOpen(false);
@@ -200,7 +201,8 @@ export function AdminDashboard() {
       <div className="mt-auto pt-4 border-t border-sidebar-border px-3">
         <button
           type="button"
-          onClick={handleLogout}
+          data-ocid="admin_dashboard.button"
+          onClick={onLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-ui font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
         >
           <LogOut className="w-4 h-4" />
@@ -242,6 +244,7 @@ export function AdminDashboard() {
           <div className="flex items-center gap-3">
             <button
               type="button"
+              data-ocid="admin_dashboard.button"
               className="md:hidden p-1.5 rounded-md hover:bg-accent"
               onClick={() => setSidebarOpen(true)}
             >
@@ -258,6 +261,15 @@ export function AdminDashboard() {
             <span className="hidden sm:block text-sm font-ui font-medium">
               Admin
             </span>
+            <Button
+              data-ocid="admin_dashboard.button"
+              variant="ghost"
+              size="sm"
+              onClick={onLogout}
+              className="font-ui text-muted-foreground hover:text-foreground md:hidden"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
         </header>
 
@@ -324,7 +336,10 @@ export function AdminDashboard() {
                     ))}
                   </div>
                 ) : complaints.length === 0 ? (
-                  <div className="py-10 text-center">
+                  <div
+                    data-ocid="admin_dashboard.empty_state"
+                    className="py-10 text-center"
+                  >
                     <p className="text-sm text-muted-foreground font-ui">
                       No complaints yet
                     </p>
@@ -339,9 +354,12 @@ export function AdminDashboard() {
                         onClick={() => setSelectedComplaint(c)}
                       >
                         <div className="flex items-center gap-3 min-w-0">
-                          <span className="text-xs font-mono text-muted-foreground shrink-0">
-                            #{Number(c.id).toString().padStart(4, "0")}
-                          </span>
+                          <div className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded px-1.5 py-0.5 shrink-0">
+                            <Hash className="w-2.5 h-2.5 text-primary" />
+                            <span className="text-xs font-mono font-bold text-primary">
+                              {c.referenceNumber}
+                            </span>
+                          </div>
                           <p className="text-sm font-ui font-medium truncate">
                             {c.title}
                           </p>
@@ -379,7 +397,7 @@ export function AdminDashboard() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
                     <Input
                       data-ocid="complaints_table.search_input"
-                      placeholder="Search by title or name..."
+                      placeholder="Search title, name or reference..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-9 font-ui text-sm"
@@ -392,7 +410,7 @@ export function AdminDashboard() {
                     onValueChange={(v) => setFilterStatus(v as Type | "all")}
                   >
                     <SelectTrigger
-                      data-ocid="complaints_table.filter_status_select"
+                      data-ocid="complaints_table.select"
                       className="font-ui text-sm"
                     >
                       <SelectValue placeholder="Status" />
@@ -413,11 +431,11 @@ export function AdminDashboard() {
                   <Select
                     value={filterCategory}
                     onValueChange={(v) =>
-                      setFilterCategory(v as Type__1 | "all")
+                      setFilterCategory(v as Type__2 | "all")
                     }
                   >
                     <SelectTrigger
-                      data-ocid="complaints_table.filter_category_select"
+                      data-ocid="complaints_table.select"
                       className="font-ui text-sm"
                     >
                       <SelectValue placeholder="Category" />
@@ -426,7 +444,7 @@ export function AdminDashboard() {
                       <SelectItem value="all" className="font-ui">
                         All Categories
                       </SelectItem>
-                      {(Object.keys(CATEGORY_LABELS) as Type__1[]).map((k) => (
+                      {(Object.keys(CATEGORY_LABELS) as Type__2[]).map((k) => (
                         <SelectItem key={k} value={k} className="font-ui">
                           {CATEGORY_LABELS[k]}
                         </SelectItem>
@@ -438,17 +456,20 @@ export function AdminDashboard() {
                   <Select
                     value={filterPriority}
                     onValueChange={(v) =>
-                      setFilterPriority(v as Type__2 | "all")
+                      setFilterPriority(v as Type__3 | "all")
                     }
                   >
-                    <SelectTrigger className="font-ui text-sm">
+                    <SelectTrigger
+                      data-ocid="complaints_table.select"
+                      className="font-ui text-sm"
+                    >
                       <SelectValue placeholder="Priority" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all" className="font-ui">
                         All Priorities
                       </SelectItem>
-                      {(Object.keys(PRIORITY_LABELS) as Type__2[]).map((k) => (
+                      {(Object.keys(PRIORITY_LABELS) as Type__3[]).map((k) => (
                         <SelectItem key={k} value={k} className="font-ui">
                           {PRIORITY_LABELS[k]}
                         </SelectItem>
@@ -488,7 +509,11 @@ export function AdminDashboard() {
                 {complaintsLoading ? (
                   <div className="p-4 space-y-3">
                     {[1, 2, 3, 4, 5].map((i) => (
-                      <Skeleton key={i} className="h-14 w-full" />
+                      <Skeleton
+                        key={i}
+                        data-ocid="complaints_table.loading_state"
+                        className="h-14 w-full"
+                      />
                     ))}
                   </div>
                 ) : filteredComplaints.length === 0 ? (
@@ -506,8 +531,8 @@ export function AdminDashboard() {
                     <Table>
                       <TableHeader>
                         <TableRow className="hover:bg-transparent">
-                          <TableHead className="font-ui font-semibold text-xs uppercase tracking-wide w-16">
-                            ID
+                          <TableHead className="font-ui font-semibold text-xs uppercase tracking-wide">
+                            Reference
                           </TableHead>
                           <TableHead className="font-ui font-semibold text-xs uppercase tracking-wide">
                             Submitter
@@ -539,9 +564,13 @@ export function AdminDashboard() {
                             data-ocid={`complaints_table.item.${idx + 1}`}
                             className="hover:bg-accent/40 cursor-pointer"
                           >
-                            <TableCell className="font-mono text-xs text-muted-foreground">
-                              #
-                              {Number(complaint.id).toString().padStart(4, "0")}
+                            <TableCell>
+                              <div className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded px-2 py-0.5 w-fit">
+                                <Hash className="w-2.5 h-2.5 text-primary shrink-0" />
+                                <span className="text-xs font-mono font-bold text-primary">
+                                  {complaint.referenceNumber}
+                                </span>
+                              </div>
                             </TableCell>
                             <TableCell>
                               <div>
@@ -549,7 +578,7 @@ export function AdminDashboard() {
                                   {complaint.submitterName}
                                 </p>
                                 <p className="text-xs text-muted-foreground font-ui capitalize">
-                                  {ROLE_LABELS[complaint.submitterRole]}
+                                  {ROLE_LABELS[complaint.submitterType]}
                                 </p>
                               </div>
                             </TableCell>
@@ -596,7 +625,7 @@ export function AdminDashboard() {
         {/* Footer */}
         <footer className="border-t border-border py-3 px-6 text-center shrink-0">
           <p className="text-xs text-muted-foreground font-ui">
-            © {new Date().getFullYear()}. Built with ♥ using{" "}
+            © {new Date().getFullYear()} Aditya University. Built with ♥ using{" "}
             <a
               href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
               target="_blank"

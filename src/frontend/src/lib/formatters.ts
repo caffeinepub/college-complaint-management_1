@@ -39,32 +39,35 @@ export const STATUS_CLASS: Record<Type, string> = {
   [Type.closed]: "status-closed",
 };
 
-export const CATEGORY_LABELS: Record<Type__1, string> = {
-  [Type__1.academic]: "Academic",
-  [Type__1.infrastructure]: "Infrastructure",
-  [Type__1.facultyConduct]: "Faculty/Staff Conduct",
-  [Type__1.administrative]: "Administrative",
-  [Type__1.hostelCanteen]: "Hostel / Canteen",
-  [Type__1.itTechnical]: "IT / Technical",
-  [Type__1.other]: "Other",
+// Type__2 = Category enum
+export const CATEGORY_LABELS: Record<Type__2, string> = {
+  [Type__2.academic]: "Academic",
+  [Type__2.infrastructure]: "Infrastructure",
+  [Type__2.facultyConduct]: "Faculty/Staff Conduct",
+  [Type__2.administrative]: "Administrative",
+  [Type__2.hostelCanteen]: "Hostel / Canteen",
+  [Type__2.itTechnical]: "IT / Technical",
+  [Type__2.other]: "Other",
 };
 
-export const PRIORITY_LABELS: Record<Type__2, string> = {
-  [Type__2.low]: "Low",
-  [Type__2.medium]: "Medium",
-  [Type__2.high]: "High",
-  [Type__2.urgent]: "Urgent",
+// Type__3 = Priority enum
+export const PRIORITY_LABELS: Record<Type__3, string> = {
+  [Type__3.low]: "Low",
+  [Type__3.medium]: "Medium",
+  [Type__3.high]: "High",
+  [Type__3.urgent]: "Urgent",
 };
 
-export const PRIORITY_CLASS: Record<Type__2, string> = {
-  [Type__2.low]: "priority-low",
-  [Type__2.medium]: "priority-medium",
-  [Type__2.high]: "priority-high",
-  [Type__2.urgent]: "priority-urgent",
+export const PRIORITY_CLASS: Record<Type__3, string> = {
+  [Type__3.low]: "priority-low",
+  [Type__3.medium]: "priority-medium",
+  [Type__3.high]: "priority-high",
+  [Type__3.urgent]: "priority-urgent",
 };
 
-export const ROLE_LABELS: Record<Type__3, string> = {
-  [Type__3.student]: "Student",
-  [Type__3.staff]: "Staff",
-  [Type__3.admin]: "Admin",
+// Type__1 = UserType enum (student/staff/admin)
+export const ROLE_LABELS: Record<Type__1, string> = {
+  [Type__1.student]: "Student",
+  [Type__1.staff]: "Staff",
+  [Type__1.admin]: "Admin",
 };

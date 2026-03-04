@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Loader2, X } from "lucide-react";
+import { CheckCircle2, Hash, Loader2, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Type__1, Type__2, Type__3 } from "../backend.d";
@@ -28,7 +28,7 @@ interface ComplaintFormModalProps {
   open: boolean;
   onClose: () => void;
   submitterName: string;
-  submitterRole: Type__3;
+  submitterRole: Type__1;
 }
 
 export function ComplaintFormModal({
@@ -38,11 +38,11 @@ export function ComplaintFormModal({
   submitterRole,
 }: ComplaintFormModalProps) {
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<Type__1 | "">("");
-  const [priority, setPriority] = useState<Type__2 | "">("");
+  const [category, setCategory] = useState<Type__2 | "">("");
+  const [priority, setPriority] = useState<Type__3 | "">("");
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState(false);
+  const [submittedRef, setSubmittedRef] = useState<string | null>(null);
 
   const submitMutation = useSubmitComplaint();
 
@@ -64,15 +64,16 @@ export function ComplaintFormModal({
     if (Object.keys(newErrors).length > 0) return;
 
     try {
-      await submitMutation.mutateAsync({
+      const referenceNumber = await submitMutation.mutateAsync({
         title: title.trim(),
-        category: category as Type__1,
-        priority: priority as Type__2,
+        category: category as Type__2,
+        priority: priority as Type__3,
         description: description.trim(),
         submitterName,
-        submitterRole,
+        submitterType: submitterRole,
       });
-      setSubmitted(true);
+      setSubmittedRef(referenceNumber);
+      toast.success(`Complaint submitted! Reference: ${referenceNumber}`);
     } catch {
       toast.error("Failed to submit complaint. Please try again.");
     }
@@ -84,7 +85,7 @@ export function ComplaintFormModal({
     setPriority("");
     setDescription("");
     setErrors({});
-    setSubmitted(false);
+    setSubmittedRef(null);
     onClose();
   };
 
@@ -94,7 +95,7 @@ export function ComplaintFormModal({
         data-ocid="complaint_form.modal"
         className="max-w-lg max-h-[90vh] overflow-y-auto"
       >
-        {submitted ? (
+        {submittedRef ? (
           <div
             data-ocid="complaint_form.success_state"
             className="flex flex-col items-center gap-4 py-8 text-center"
@@ -110,8 +111,21 @@ export function ComplaintFormModal({
                 Your complaint has been received and will be reviewed by the
                 administration.
               </p>
+              <div className="mt-3 inline-flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-4 py-2">
+                <Hash className="w-4 h-4 text-primary" />
+                <span className="font-mono font-bold text-primary text-base">
+                  {submittedRef}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Save this reference number for future tracking
+              </p>
             </div>
-            <Button onClick={handleClose} className="font-ui font-semibold">
+            <Button
+              data-ocid="complaint_form.close_button"
+              onClick={handleClose}
+              className="font-ui font-semibold"
+            >
               Close
             </Button>
           </div>
@@ -122,7 +136,7 @@ export function ComplaintFormModal({
                 Submit New Complaint
               </DialogTitle>
               <DialogDescription className="text-sm text-muted-foreground">
-                Provide details about your grievance. All fields marked * are
+                Provide details about your complaint. All fields marked * are
                 required.
               </DialogDescription>
             </DialogHeader>
@@ -138,7 +152,7 @@ export function ComplaintFormModal({
                 </Label>
                 <Input
                   id="c-title"
-                  data-ocid="complaint_form.title_input"
+                  data-ocid="complaint_form.input"
                   placeholder="Brief summary of the issue"
                   value={title}
                   onChange={(e) => {
@@ -149,7 +163,12 @@ export function ComplaintFormModal({
                   className="font-ui"
                 />
                 {errors.title && (
-                  <p className="text-destructive text-xs">{errors.title}</p>
+                  <p
+                    data-ocid="complaint_form.error_state"
+                    className="text-destructive text-xs"
+                  >
+                    {errors.title}
+                  </p>
                 )}
               </div>
 
@@ -161,19 +180,19 @@ export function ComplaintFormModal({
                 <Select
                   value={category}
                   onValueChange={(v) => {
-                    setCategory(v as Type__1);
+                    setCategory(v as Type__2);
                     if (errors.category)
                       setErrors((prev) => ({ ...prev, category: "" }));
                   }}
                 >
                   <SelectTrigger
-                    data-ocid="complaint_form.category_select"
+                    data-ocid="complaint_form.select"
                     className="font-ui"
                   >
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(Object.keys(CATEGORY_LABELS) as Type__1[]).map((k) => (
+                    {(Object.keys(CATEGORY_LABELS) as Type__2[]).map((k) => (
                       <SelectItem key={k} value={k} className="font-ui">
                         {CATEGORY_LABELS[k]}
                       </SelectItem>
@@ -193,19 +212,19 @@ export function ComplaintFormModal({
                 <Select
                   value={priority}
                   onValueChange={(v) => {
-                    setPriority(v as Type__2);
+                    setPriority(v as Type__3);
                     if (errors.priority)
                       setErrors((prev) => ({ ...prev, priority: "" }));
                   }}
                 >
                   <SelectTrigger
-                    data-ocid="complaint_form.priority_select"
+                    data-ocid="complaint_form.select"
                     className="font-ui"
                   >
                     <SelectValue placeholder="Select priority level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(Object.keys(PRIORITY_LABELS) as Type__2[]).map((k) => (
+                    {(Object.keys(PRIORITY_LABELS) as Type__3[]).map((k) => (
                       <SelectItem key={k} value={k} className="font-ui">
                         {PRIORITY_LABELS[k]}
                       </SelectItem>
@@ -227,7 +246,7 @@ export function ComplaintFormModal({
                 </Label>
                 <Textarea
                   id="c-description"
-                  data-ocid="complaint_form.description_textarea"
+                  data-ocid="complaint_form.textarea"
                   placeholder="Describe the issue in detail (minimum 20 characters)..."
                   value={description}
                   onChange={(e) => {

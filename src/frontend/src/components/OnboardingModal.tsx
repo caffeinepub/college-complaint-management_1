@@ -12,7 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { GraduationCap, Loader2, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { Type__3 } from "../backend.d";
+import type { Type__1, Type__3 } from "../backend.d";
 import { useSaveCallerUserProfile } from "../hooks/useQueries";
 
 interface OnboardingModalProps {
@@ -41,7 +41,11 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
     }
 
     try {
-      await saveMutation.mutateAsync({ name: name.trim() });
+      await saveMutation.mutateAsync({
+        userId: "anonymous",
+        name: name.trim(),
+        role: role as unknown as Type__1,
+      });
       onComplete(name.trim(), role as Type__3);
       toast.success("Profile saved! Welcome to GrievanceHub.");
     } catch {
