@@ -1,0 +1,197 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Cabinet Grotesk";
+  src: url("/assets/fonts/CabinetGrotesk-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/assets/fonts/BricolageGrotesque-Variable.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "General Sans";
+  src: url("/assets/fonts/GeneralSans-Variable.woff2") format("woff2");
+  font-weight: 200 700;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --radius: 0.5rem;
+
+    /* Navy-Slate Institutional Palette */
+    --background: 0.97 0.008 240;
+    --foreground: 0.18 0.03 255;
+
+    --card: 1 0 0;
+    --card-foreground: 0.18 0.03 255;
+
+    --popover: 1 0 0;
+    --popover-foreground: 0.18 0.03 255;
+
+    /* Deep Navy Primary */
+    --primary: 0.26 0.065 255;
+    --primary-foreground: 0.98 0 0;
+
+    --secondary: 0.94 0.014 240;
+    --secondary-foreground: 0.26 0.065 255;
+
+    --muted: 0.93 0.012 240;
+    --muted-foreground: 0.52 0.02 250;
+
+    --accent: 0.92 0.02 240;
+    --accent-foreground: 0.26 0.065 255;
+
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+
+    /* Success, Warning, Info */
+    --success: 0.55 0.17 145;
+    --success-foreground: 0.98 0 0;
+    --warning: 0.72 0.18 60;
+    --warning-foreground: 0.15 0 0;
+    --info: 0.58 0.18 240;
+    --info-foreground: 0.98 0 0;
+
+    --border: 0.88 0.014 240;
+    --input: 0.88 0.014 240;
+    --ring: 0.26 0.065 255;
+
+    /* Status colors */
+    --status-open: 0.58 0.18 240;
+    --status-inprogress: 0.72 0.18 60;
+    --status-resolved: 0.55 0.17 145;
+    --status-closed: 0.52 0.02 250;
+
+    /* Priority colors */
+    --priority-low: 0.52 0.02 250;
+    --priority-medium: 0.58 0.18 240;
+    --priority-high: 0.65 0.19 40;
+    --priority-urgent: 0.577 0.245 27.325;
+
+    --chart-1: 0.58 0.18 240;
+    --chart-2: 0.55 0.17 145;
+    --chart-3: 0.72 0.18 60;
+    --chart-4: 0.577 0.245 27.325;
+    --chart-5: 0.65 0.19 290;
+
+    --sidebar: 0.19 0.05 255;
+    --sidebar-foreground: 0.93 0.01 240;
+    --sidebar-primary: 0.68 0.18 200;
+    --sidebar-primary-foreground: 0.98 0 0;
+    --sidebar-accent: 0.28 0.065 255;
+    --sidebar-accent-foreground: 0.93 0.01 240;
+    --sidebar-border: 0.30 0.06 255;
+    --sidebar-ring: 0.68 0.18 200;
+  }
+
+  .dark {
+    --background: 0.13 0.03 255;
+    --foreground: 0.95 0.01 240;
+
+    --card: 0.18 0.04 255;
+    --card-foreground: 0.95 0.01 240;
+
+    --popover: 0.20 0.045 255;
+    --popover-foreground: 0.95 0.01 240;
+
+    --primary: 0.68 0.18 200;
+    --primary-foreground: 0.12 0.03 255;
+
+    --secondary: 0.24 0.055 255;
+    --secondary-foreground: 0.95 0.01 240;
+
+    --muted: 0.22 0.045 255;
+    --muted-foreground: 0.65 0.02 250;
+
+    --accent: 0.26 0.055 255;
+    --accent-foreground: 0.95 0.01 240;
+
+    --destructive: 0.704 0.191 22.216;
+    --destructive-foreground: 0.12 0.03 255;
+
+    --border: 0.28 0.055 255;
+    --input: 0.28 0.055 255;
+    --ring: 0.68 0.18 200;
+
+    --sidebar: 0.11 0.03 255;
+    --sidebar-foreground: 0.93 0.01 240;
+    --sidebar-primary: 0.68 0.18 200;
+    --sidebar-primary-foreground: 0.12 0.03 255;
+    --sidebar-accent: 0.18 0.04 255;
+    --sidebar-accent-foreground: 0.93 0.01 240;
+    --sidebar-border: 0.22 0.05 255;
+    --sidebar-ring: 0.68 0.18 200;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "General Sans", sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Bricolage Grotesque", sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: "Bricolage Grotesque", sans-serif;
+  }
+
+  .font-ui {
+    font-family: "Cabinet Grotesk", sans-serif;
+  }
+
+  .status-open {
+    background-color: oklch(0.92 0.05 240);
+    color: oklch(0.32 0.15 240);
+  }
+
+  .status-inprogress {
+    background-color: oklch(0.95 0.07 60);
+    color: oklch(0.42 0.15 60);
+  }
+
+  .status-resolved {
+    background-color: oklch(0.92 0.06 145);
+    color: oklch(0.35 0.14 145);
+  }
+
+  .status-closed {
+    background-color: oklch(0.92 0.01 250);
+    color: oklch(0.42 0.02 250);
+  }
+
+  .priority-low {
+    background-color: oklch(0.92 0.01 250);
+    color: oklch(0.42 0.02 250);
+  }
+
+  .priority-medium {
+    background-color: oklch(0.92 0.05 240);
+    color: oklch(0.35 0.15 240);
+  }
+
+  .priority-high {
+    background-color: oklch(0.95 0.1 40);
+    color: oklch(0.42 0.18 40);
+  }
+
+  .priority-urgent {
+    background-color: oklch(0.95 0.1 27);
+    color: oklch(0.48 0.22 27);
+  }
+}
