@@ -10,13 +10,13 @@ import Order "mo:core/Order";
 import Principal "mo:core/Principal";
 import VarArray "mo:core/VarArray";
 import Char "mo:core/Char";
-import Migration "migration";
+
 
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 
 // apply data migration in special with-clause
-(with migration = Migration.run)
+
 actor {
   // Initialize the access control system
   let accessControlState = AccessControl.initState();

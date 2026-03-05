@@ -247,7 +247,7 @@ export function LandingPage({ onLogin }: LandingPageProps) {
       {/* Full-page background */}
       <div className="absolute inset-0 z-0">
         <img
-          src="/assets/uploads/aditya-1--1.jpeg"
+          src="/assets/uploads/aditya-1-1-1.jpeg"
           alt="Aditya University campus"
           className="w-full h-full object-cover"
         />
