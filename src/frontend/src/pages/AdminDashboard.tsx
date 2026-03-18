@@ -17,6 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
   ClipboardList,
@@ -35,10 +36,12 @@ import {
   XCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Complaint, Type, Type__2, Type__3 } from "../backend.d";
+import { Type__1 } from "../backend.d";
 import { AdminComplaintModal } from "../components/AdminComplaintModal";
 import { PriorityBadge, StatusBadge } from "../components/StatusBadge";
+import { useActor } from "../hooks/useActor";
 import { useGetAllComplaints, useGetComplaintStats } from "../hooks/useQueries";
 import {
   CATEGORY_LABELS,
@@ -55,6 +58,30 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
+  const { actor, isFetching } = useActor();
+  const queryClient = useQueryClient();
+  const registeredRef = useRef(false);
+
+  useEffect(() => {
+    if (!actor || isFetching || registeredRef.current) return;
+    registeredRef.current = true;
+
+    actor
+      .registerUser("admin", "Administrator", Type__1.admin)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["allComplaints"] });
+        queryClient.invalidateQueries({ queryKey: ["complaintStats"] });
+      })
+      .catch((err: unknown) => {
+        // alreadyExists is expected on subsequent logins — still refresh queries
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("alreadyExists") || msg.includes("already")) {
+          queryClient.invalidateQueries({ queryKey: ["allComplaints"] });
+          queryClient.invalidateQueries({ queryKey: ["complaintStats"] });
+        }
+      });
+  }, [actor, isFetching, queryClient]);
+
   const { data: complaints = [], isLoading: complaintsLoading } =
     useGetAllComplaints();
   const { data: stats, isLoading: statsLoading } = useGetComplaintStats();
