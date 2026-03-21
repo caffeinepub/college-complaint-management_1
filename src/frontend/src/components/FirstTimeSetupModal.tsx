@@ -12,13 +12,13 @@ import { Eye, EyeOff, Loader2, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Type__1 } from "../backend.d";
-import { useRegisterUser } from "../hooks/useQueries";
+import { useActor } from "../hooks/useActor";
 
 interface FirstTimeSetupModalProps {
   open: boolean;
   userId: string;
   userType: Type__1;
-  onComplete: (name: string) => void;
+  onComplete: (name: string, password: string) => void;
   onCancel: () => void;
 }
 
@@ -35,8 +35,9 @@ export function FirstTimeSetupModal({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const registerMutation = useRegisterUser();
+  const { actor } = useActor();
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -59,27 +60,46 @@ export function FirstTimeSetupModal({
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
+    if (!actor) {
+      toast.error("Connection error. Please try again.");
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      const result = await registerMutation.mutateAsync({
+      // registerUserPublic returns Result<Text> which is { ok: string } or { err: {...} }
+      const result = (await (actor as any).registerUserPublic(
         userId,
-        name: name.trim(),
+        name.trim(),
+        password,
         userType,
-      });
-      // Store password locally (UI layer only — backend uses ICP principal)
-      const passwordKey = `aditya_pwd_${userId}`;
-      localStorage.setItem(passwordKey, password);
-      toast.success(
-        "Account set up successfully! Welcome to Aditya University CMS.",
-      );
-      onComplete(name.trim());
+      )) as { ok?: string; err?: Record<string, null> };
+
+      if (!("ok" in result)) {
+        if (result.err && "alreadyExists" in result.err) {
+          toast.error("This ID is already registered. Please log in instead.");
+        } else {
+          toast.error("Registration failed. Please check your details.");
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
+      toast.success("Account created! Welcome.");
+      const savedPassword = password;
+      const savedName = name.trim();
+
       // Reset form
       setName("");
       setPassword("");
       setConfirmPassword("");
       setErrors({});
-      return result;
+
+      onComplete(savedName, savedPassword);
     } catch {
       toast.error("Failed to complete setup. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -236,7 +256,7 @@ export function FirstTimeSetupModal({
               data-ocid="setup.cancel_button"
               className="flex-1 font-ui"
               onClick={onCancel}
-              disabled={registerMutation.isPending}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
@@ -244,9 +264,9 @@ export function FirstTimeSetupModal({
               type="submit"
               data-ocid="setup.submit_button"
               className="flex-1 font-ui font-semibold"
-              disabled={registerMutation.isPending}
+              disabled={isSubmitting}
             >
-              {registerMutation.isPending ? (
+              {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Setting up...

@@ -115,7 +115,74 @@ export function useIsCallerAdmin() {
   });
 }
 
-// ─── Complaints ───────────────────────────────────────────────────────────────
+// ─── Complaints (userId-based, no II required) ────────────────────────────────
+
+export function useGetComplaintsByUserId(userId: string, password: string) {
+  const { actor, isFetching: actorFetching } = useActor();
+
+  return useQuery<Complaint[]>({
+    queryKey: ["complaintsByUserId", userId],
+    queryFn: async () => {
+      if (!actor) return [];
+      const result = (await (actor as any).getComplaintsByUserId(
+        userId,
+        password,
+      )) as
+        | { __kind__: "ok"; ok: Complaint[] }
+        | { __kind__: "err"; err: string };
+      if (result.__kind__ === "ok") return result.ok;
+      return [];
+    },
+    enabled: !!actor && !actorFetching && !!userId && !!password,
+    refetchOnMount: true,
+  });
+}
+
+export function useSubmitComplaintPublic(userId: string, password: string) {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      submitterName,
+      submitterType,
+      category,
+      title,
+      description,
+      priority,
+    }: {
+      submitterName: string;
+      submitterType: Type__1;
+      category: Type__2;
+      title: string;
+      description: string;
+      priority: Type__3;
+    }) => {
+      if (!actor) throw new Error("Actor not available");
+      const result = (await (actor as any).submitComplaintPublic(
+        userId,
+        password,
+        submitterName,
+        submitterType,
+        category,
+        title,
+        description,
+        priority,
+      )) as { __kind__: "ok"; ok: string } | { __kind__: "err"; err: string };
+      if (result.__kind__ === "ok") return result.ok;
+      throw new Error("Failed to submit complaint");
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["complaintsByUserId", userId],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["allComplaints"] });
+      void queryClient.invalidateQueries({ queryKey: ["complaintStats"] });
+    },
+  });
+}
+
+// ─── Complaints (legacy II-based) ─────────────────────────────────────────────
 
 export function useGetMyComplaints() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -156,9 +223,12 @@ export function useGetAllComplaints() {
       if (!actor) return [];
       const result = await actor.getAllComplaints();
       if (result.__kind__ === "ok") return result.ok;
-      return [];
+      throw new Error(`Failed to fetch complaints: ${result.__kind__}`);
     },
     enabled: !!actor && !actorFetching,
+    retry: 3,
+    retryDelay: 1500,
+    refetchOnMount: "always",
   });
 }
 
@@ -174,6 +244,9 @@ export function useGetComplaintStats() {
       throw new Error("Failed to fetch stats");
     },
     enabled: !!actor && !actorFetching,
+    retry: 3,
+    retryDelay: 1500,
+    refetchOnMount: "always",
   });
 }
 

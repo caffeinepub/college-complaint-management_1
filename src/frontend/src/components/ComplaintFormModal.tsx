@@ -142,7 +142,6 @@ export function ComplaintFormModal({
             </DialogHeader>
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-              {/* Title */}
               <div className="space-y-1.5">
                 <Label
                   htmlFor="c-title"
@@ -157,8 +156,7 @@ export function ComplaintFormModal({
                   value={title}
                   onChange={(e) => {
                     setTitle(e.target.value);
-                    if (errors.title)
-                      setErrors((prev) => ({ ...prev, title: "" }));
+                    if (errors.title) setErrors((p) => ({ ...p, title: "" }));
                   }}
                   className="font-ui"
                 />
@@ -172,7 +170,6 @@ export function ComplaintFormModal({
                 )}
               </div>
 
-              {/* Category */}
               <div className="space-y-1.5">
                 <Label className="font-ui font-semibold text-sm">
                   Category *
@@ -182,7 +179,7 @@ export function ComplaintFormModal({
                   onValueChange={(v) => {
                     setCategory(v as Type__2);
                     if (errors.category)
-                      setErrors((prev) => ({ ...prev, category: "" }));
+                      setErrors((p) => ({ ...p, category: "" }));
                   }}
                 >
                   <SelectTrigger
@@ -204,7 +201,6 @@ export function ComplaintFormModal({
                 )}
               </div>
 
-              {/* Priority */}
               <div className="space-y-1.5">
                 <Label className="font-ui font-semibold text-sm">
                   Priority *
@@ -214,7 +210,7 @@ export function ComplaintFormModal({
                   onValueChange={(v) => {
                     setPriority(v as Type__3);
                     if (errors.priority)
-                      setErrors((prev) => ({ ...prev, priority: "" }));
+                      setErrors((p) => ({ ...p, priority: "" }));
                   }}
                 >
                   <SelectTrigger
@@ -236,7 +232,6 @@ export function ComplaintFormModal({
                 )}
               </div>
 
-              {/* Description */}
               <div className="space-y-1.5">
                 <Label
                   htmlFor="c-description"
@@ -252,7 +247,7 @@ export function ComplaintFormModal({
                   onChange={(e) => {
                     setDescription(e.target.value);
                     if (errors.description)
-                      setErrors((prev) => ({ ...prev, description: "" }));
+                      setErrors((p) => ({ ...p, description: "" }));
                   }}
                   rows={4}
                   className="font-ui resize-none"

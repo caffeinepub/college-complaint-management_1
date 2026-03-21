@@ -15,10 +15,7 @@ import Char "mo:core/Char";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 
-// apply data migration in special with-clause
-
 actor {
-  // Initialize the access control system
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
 
@@ -104,10 +101,13 @@ actor {
   };
 
   let userProfiles = Map.empty<Principal, UserProfile>();
+  // New: userId-keyed profiles for password-based auth (no II required)
+  let userProfilesByUserId = Map.empty<Text, UserProfile>();
   let complaints = Map.empty<Nat, Complaint>();
+  // Password storage: userId -> password
+  let userPasswords = Map.empty<Text, Text>();
   var nextComplaintId : Nat = 1;
 
-  // Helper function to check if user has a profile (registered)
   func isRegistered(caller : Principal) : Bool {
     switch (userProfiles.get(caller)) {
       case (?_) { true };
@@ -115,7 +115,6 @@ actor {
     };
   };
 
-  // Helper function to get user profile
   func getUserProfileInternal(caller : Principal) : ?UserProfile {
     userProfiles.get(caller);
   };
@@ -128,6 +127,141 @@ actor {
       "";
     };
     "ADITYA#" # padding # idText;
+  };
+
+  // ============ PASSWORD MANAGEMENT ============
+
+  // Set password for a userId (first-time setup or update)
+  public shared func setUserPassword(userId : Text, password : Text) : async Result<()> {
+    let trimmedId = userId.trim(#char ' ');
+    if (trimmedId.size() == 0 or password.size() < 6) {
+      return #err(#invalidInput);
+    };
+    userPasswords.add(trimmedId, password);
+    #ok(());
+  };
+
+  // Verify password for a userId
+  public query func verifyUserPassword(userId : Text, password : Text) : async Bool {
+    let trimmedId = userId.trim(#char ' ');
+    switch (userPasswords.get(trimmedId)) {
+      case (?stored) { stored == password };
+      case (null) { false };
+    };
+  };
+
+  // Check if a userId has a password set (i.e., has registered before)
+  public query func hasPasswordSet(userId : Text) : async Bool {
+    let trimmedId = userId.trim(#char ' ');
+    switch (userPasswords.get(trimmedId)) {
+      case (?_) { true };
+      case (null) { false };
+    };
+  };
+
+  // ============ PUBLIC REGISTRATION (no Internet Identity required) ============
+
+  // Register a new student or staff using only userId + password (no II)
+  public shared func registerUserPublic(userId : Text, name : Text, password : Text, userType : Role.Type) : async Result<Text> {
+    let trimmedId = userId.trim(#char ' ');
+    let trimmedName = name.trim(#char ' ');
+
+    if (trimmedId.size() < 2 or trimmedName.size() < 2 or password.size() < 6) {
+      return #err(#invalidInput);
+    };
+
+    // Check if userId already has a password (already registered)
+    switch (userPasswords.get(trimmedId)) {
+      case (?_) { return #err(#alreadyExists) };
+      case (null) {};
+    };
+
+    // Store password
+    userPasswords.add(trimmedId, password);
+
+    // Store profile in userId-keyed map
+    let profile : UserProfile = {
+      name = trimmedName;
+      role = userType;
+      userId = trimmedId;
+    };
+    userProfilesByUserId.add(trimmedId, profile);
+
+    #ok(trimmedId);
+  };
+
+  // ============ PUBLIC COMPLAINT SUBMISSION (no Internet Identity required) ============
+
+  // Submit a complaint using userId + password auth (no II required)
+  public shared func submitComplaintPublic(
+    userId : Text,
+    password : Text,
+    submitterName : Text,
+    submitterType : Role.Type,
+    category : Category.Type,
+    title : Text,
+    description : Text,
+    priority : Priority.Type,
+  ) : async Result<Text> {
+    let trimmedId = userId.trim(#char ' ');
+
+    // Verify password
+    switch (userPasswords.get(trimmedId)) {
+      case (?stored) {
+        if (stored != password) return #err(#unauthorized);
+      };
+      case (null) { return #err(#unauthorized) };
+    };
+
+    if (title.size() == 0 or description.size() == 0) {
+      return #err(#invalidInput);
+    };
+
+    let id = nextComplaintId;
+    nextComplaintId += 1;
+
+    let referenceNumber = formatReferenceNumber(id);
+
+    // Use anonymous principal for submittedBy (userId is the real identifier)
+    let anonPrincipal = Principal.fromText("2vxsx-fae");
+
+    let complaint : Complaint = {
+      id;
+      referenceNumber;
+      submittedBy = anonPrincipal;
+      submittedByUserId = trimmedId;
+      submitterName;
+      submitterType;
+      category;
+      title;
+      description;
+      priority;
+      status = #open;
+      createdAt = Time.now();
+      updatedAt = Time.now();
+      adminResponse = null;
+      assignedTo = null;
+    };
+
+    complaints.add(id, complaint);
+    #ok(referenceNumber);
+  };
+
+  // Get complaints by userId + password (no II required)
+  public query func getComplaintsByUserId(userId : Text, password : Text) : async Result<[Complaint]> {
+    let trimmedId = userId.trim(#char ' ');
+
+    switch (userPasswords.get(trimmedId)) {
+      case (?stored) {
+        if (stored != password) return #err(#unauthorized);
+      };
+      case (null) { return #err(#unauthorized) };
+    };
+
+    let filtered = complaints.values().toArray().filter(
+      func(c : Complaint) : Bool { c.submittedByUserId == trimmedId }
+    );
+    #ok(filtered);
   };
 
   // ============ USER PROFILE MANAGEMENT ============
@@ -153,7 +287,7 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // ============ REGISTRATION ============
+  // ============ REGISTRATION (legacy, II-based) ============
 
   public shared ({ caller }) func registerUser(userId : Text, name : Text, userType : Role.Type) : async Result<Text> {
     let trimmedUserId = userId.trim(#char ' ');
@@ -163,7 +297,6 @@ actor {
       return #err(#invalidInput);
     };
 
-    // Check if already registered
     switch (userProfiles.get(caller)) {
       case (?_) {
         return #err(#alreadyExists);
@@ -179,7 +312,6 @@ actor {
 
     userProfiles.add(caller, profile);
 
-    // Assign appropriate role in AccessControl
     let accessRole = switch (userType) {
       case (#admin) { #admin };
       case (#staff) { #user };
@@ -199,18 +331,36 @@ actor {
     userProfiles.get(caller);
   };
 
-  public query ({ caller }) func isFirstTimeUser(userId : Text) : async Bool {
-    // Anyone can check if a userId is registered (for registration flow)
-    // This is safe as it only reveals if a userId exists, not sensitive data
+  // Get user profile by userId - checks userId-keyed map first, then principal-keyed
+  public query func getUserProfileByUserId(userId : Text) : async ?UserProfile {
+    let trimmedId = userId.trim(#char ' ');
+    // Check new userId-keyed map first
+    switch (userProfilesByUserId.get(trimmedId)) {
+      case (?profile) { return ?profile };
+      case (null) {};
+    };
+    // Fall back to principal-keyed map (legacy)
     let allProfiles = userProfiles.values().toArray();
-    let found = allProfiles.find(func(p) { p.userId == userId });
+    allProfiles.find(func(p : UserProfile) : Bool { p.userId == trimmedId });
+  };
+
+  public query ({ caller }) func isFirstTimeUser(userId : Text) : async Bool {
+    let trimmedId = userId.trim(#char ' ');
+    // Check userId-keyed map
+    switch (userProfilesByUserId.get(trimmedId)) {
+      case (?_) { return false };
+      case (null) {};
+    };
+    // Check principal-keyed map
+    let allProfiles = userProfiles.values().toArray();
+    let found = allProfiles.find(func(p : UserProfile) : Bool { p.userId == trimmedId });
     switch (found) {
       case (?_) { false };
       case (null) { true };
     };
   };
 
-  // ============ COMPLAINT SUBMISSION ============
+  // ============ COMPLAINT SUBMISSION (legacy, II-based) ============
 
   public shared ({ caller }) func submitComplaint(
     submitterName : Text,
@@ -220,18 +370,15 @@ actor {
     description : Text,
     priority : Priority.Type,
   ) : async Result<Text> {
-    // Only registered users can submit complaints
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       return #err(#unauthorized);
     };
 
-    // Verify user is registered
     let userProfile = switch (userProfiles.get(caller)) {
       case (?profile) { profile };
       case (null) { return #err(#unauthorized) };
     };
 
-    // Admins should not submit complaints as students/staff
     if (AccessControl.isAdmin(accessControlState, caller) and submitterType != #admin) {
       return #err(#unauthorized);
     };
@@ -263,7 +410,7 @@ actor {
     #ok(referenceNumber);
   };
 
-  // ============ VIEW OWN COMPLAINTS ============
+  // ============ VIEW OWN COMPLAINTS (legacy, II-based) ============
 
   public query ({ caller }) func getMyComplaints() : async Result<[Complaint]> {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
@@ -365,7 +512,6 @@ actor {
 
     switch (complaints.get(id)) {
       case (?complaint) {
-        // Users can only view their own complaints, admins can view all
         if (complaint.submittedBy == caller or AccessControl.isAdmin(accessControlState, caller)) {
           #ok(complaint);
         } else {

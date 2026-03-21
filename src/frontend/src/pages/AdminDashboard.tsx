@@ -61,6 +61,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
   const { actor, isFetching } = useActor();
   const queryClient = useQueryClient();
   const registeredRef = useRef(false);
+  const [isAdminReady, setIsAdminReady] = useState(false);
 
   useEffect(() => {
     if (!actor || isFetching || registeredRef.current) return;
@@ -68,14 +69,18 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
     actor
       .registerUser("admin", "Administrator", Type__1.admin)
-      .then(() => {
+      .then(async () => {
+        setIsAdminReady(true);
+        await new Promise((resolve) => setTimeout(resolve, 500));
         queryClient.invalidateQueries({ queryKey: ["allComplaints"] });
         queryClient.invalidateQueries({ queryKey: ["complaintStats"] });
       })
-      .catch((err: unknown) => {
+      .catch(async (err: unknown) => {
         // alreadyExists is expected on subsequent logins — still refresh queries
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.includes("alreadyExists") || msg.includes("already")) {
+          setIsAdminReady(true);
+          await new Promise((resolve) => setTimeout(resolve, 500));
           queryClient.invalidateQueries({ queryKey: ["allComplaints"] });
           queryClient.invalidateQueries({ queryKey: ["complaintStats"] });
         }
@@ -168,7 +173,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         </div>
         <div>
           <span className="font-display font-bold text-sm text-sidebar-foreground tracking-tight leading-tight block">
-            Aditya University
+            College Complaint Management System
           </span>
           <span className="text-[10px] text-sidebar-foreground/50 font-ui leading-tight block">
             CMS
@@ -238,6 +243,9 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
       </div>
     </nav>
   );
+
+  // Show loading state while admin registration is in progress
+  const isInitializing = !isAdminReady && (complaintsLoading || !actor);
 
   return (
     <div
@@ -332,7 +340,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       <s.icon className={`w-4 h-4 ${s.color}`} />
                     </div>
                     <p className="text-2xl font-display font-bold text-foreground">
-                      {statsLoading ? "—" : s.value}
+                      {statsLoading || isInitializing ? "—" : s.value}
                     </p>
                     <p className="text-xs text-muted-foreground font-ui mt-0.5">
                       {s.label}
@@ -356,7 +364,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     View all
                   </Button>
                 </div>
-                {complaintsLoading ? (
+                {complaintsLoading || isInitializing ? (
                   <div className="p-4 space-y-2">
                     {[1, 2, 3].map((i) => (
                       <Skeleton key={i} className="h-12 w-full" />
@@ -533,7 +541,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
               {/* Table */}
               <div className="bg-card border border-border rounded-xl shadow-card overflow-hidden">
-                {complaintsLoading ? (
+                {complaintsLoading || isInitializing ? (
                   <div className="p-4 space-y-3">
                     {[1, 2, 3, 4, 5].map((i) => (
                       <Skeleton
@@ -652,7 +660,8 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
         {/* Footer */}
         <footer className="border-t border-border py-3 px-6 text-center shrink-0">
           <p className="text-xs text-muted-foreground font-ui">
-            © {new Date().getFullYear()} Aditya University. Built with ♥ using{" "}
+            © {new Date().getFullYear()} College Complaint Management System.
+            Built with ♥ using{" "}
             <a
               href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
               target="_blank"

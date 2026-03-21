@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Type__1 } from "./backend.d";
+import { useActor } from "./hooks/useActor";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { LandingPage } from "./pages/LandingPage";
@@ -24,24 +25,52 @@ function LoadingScreen() {
   );
 }
 
-export default function App() {
-  const { isInitializing, clear } = useInternetIdentity();
+function AppInner() {
   const [session, setSession] = useState<Session | null>(null);
   const [isSessionLoaded, setIsSessionLoaded] = useState(false);
+  const { actor, isFetching } = useActor();
+  const { identity } = useInternetIdentity();
 
-  // Load session from localStorage on mount
+  // Load session from localStorage on mount, or restore from II profile
   useEffect(() => {
     const stored = localStorage.getItem("aditya_session");
     if (stored) {
       try {
         const parsed = JSON.parse(stored) as Session;
         setSession(parsed);
+        setIsSessionLoaded(true);
+        return;
       } catch {
         localStorage.removeItem("aditya_session");
       }
     }
     setIsSessionLoaded(true);
   }, []);
+
+  // If II identity is present but no session, try to restore from profile
+  useEffect(() => {
+    if (!isSessionLoaded) return;
+    if (session) return;
+    if (!identity || identity.getPrincipal().isAnonymous()) return;
+    if (!actor || isFetching) return;
+
+    void (async () => {
+      try {
+        const profile = await actor.getCallerUserProfile();
+        if (profile) {
+          const restored: Session = {
+            userId: profile.userId,
+            userType: profile.role,
+            name: profile.name,
+          };
+          localStorage.setItem("aditya_session", JSON.stringify(restored));
+          setSession(restored);
+        }
+      } catch {
+        // ignore - user will need to log in again
+      }
+    })();
+  }, [isSessionLoaded, session, identity, actor, isFetching]);
 
   const handleLogin = (newSession: Session) => {
     setSession(newSession);
@@ -50,16 +79,12 @@ export default function App() {
   const handleLogout = () => {
     localStorage.removeItem("aditya_session");
     setSession(null);
-    // Also clear II identity
-    clear();
   };
 
-  // Wait for II initialization and session loading
-  if (isInitializing || !isSessionLoaded) {
+  if (!isSessionLoaded) {
     return <LoadingScreen />;
   }
 
-  // No session → show landing page
   if (!session) {
     return (
       <>
@@ -69,7 +94,6 @@ export default function App() {
     );
   }
 
-  // Admin session → admin dashboard
   if (session.userType === "admin") {
     return (
       <>
@@ -79,15 +103,19 @@ export default function App() {
     );
   }
 
-  // Student/Staff session → student dashboard
   return (
     <>
       <StudentDashboard
         userName={session.name}
         userRole={session.userType}
+        userId={session.userId}
         onLogout={handleLogout}
       />
       <Toaster position="top-right" richColors />
     </>
   );
+}
+
+export default function App() {
+  return <AppInner />;
 }

@@ -23,12 +23,14 @@ import { CATEGORY_LABELS, formatDate } from "../lib/formatters";
 interface StudentDashboardProps {
   userName: string;
   userRole: Type__1;
+  userId: string;
   onLogout: () => void;
 }
 
 export function StudentDashboard({
   userName,
   userRole,
+  userId: _userId,
   onLogout,
 }: StudentDashboardProps) {
   const { data: complaints = [], isLoading } = useGetMyComplaints();
@@ -62,10 +64,7 @@ export function StudentDashboard({
             </div>
             <div className="flex flex-col">
               <span className="font-display font-bold text-sm tracking-tight leading-tight">
-                Aditya University
-              </span>
-              <span className="text-[10px] text-muted-foreground font-ui leading-tight hidden sm:block">
-                Complaint Management System
+                College Complaint Management System
               </span>
             </div>
           </div>
@@ -166,7 +165,7 @@ export function StudentDashboard({
                 <s.icon className={`w-4 h-4 ${s.color}`} />
               </div>
               <p className="text-2xl font-display font-bold text-foreground">
-                {isLoading ? "—" : s.value}
+                {isLoading ? "--" : s.value}
               </p>
               <p className="text-xs text-muted-foreground font-ui mt-0.5">
                 {s.label}
@@ -218,7 +217,6 @@ export function StudentDashboard({
               </div>
             ) : (
               <div data-ocid="student_dashboard.list">
-                {/* Table header */}
                 <div className="hidden md:grid grid-cols-[160px_1fr_auto_auto_auto_auto] gap-4 px-5 py-3 bg-muted/40 border-b border-border text-xs font-semibold font-ui text-muted-foreground uppercase tracking-wide">
                   <span>Reference</span>
                   <span>Title</span>
@@ -236,7 +234,6 @@ export function StudentDashboard({
                       className="w-full text-left px-5 py-4 hover:bg-accent/50 cursor-pointer transition-colors"
                       onClick={() => setSelectedComplaint(complaint)}
                     >
-                      {/* Mobile layout */}
                       <div className="md:hidden space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
@@ -261,8 +258,6 @@ export function StudentDashboard({
                           <span>{formatDate(complaint.createdAt)}</span>
                         </div>
                       </div>
-
-                      {/* Desktop layout */}
                       <div className="hidden md:grid grid-cols-[160px_1fr_auto_auto_auto_auto] gap-4 items-center">
                         <div className="flex items-center gap-1 bg-primary/10 border border-primary/20 rounded px-2 py-1 w-fit">
                           <Hash className="w-2.5 h-2.5 text-primary shrink-0" />
@@ -294,7 +289,8 @@ export function StudentDashboard({
       {/* Footer */}
       <footer className="border-t border-border py-5 px-6 text-center mt-auto">
         <p className="text-xs text-muted-foreground font-ui">
-          © {new Date().getFullYear()} Aditya University. Built with ♥ using{" "}
+          © {new Date().getFullYear()} College Complaint Management System.
+          Built with ♥ using{" "}
           <a
             href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
             target="_blank"
@@ -306,7 +302,6 @@ export function StudentDashboard({
         </p>
       </footer>
 
-      {/* Modals */}
       <ComplaintFormModal
         open={showForm}
         onClose={() => setShowForm(false)}
