@@ -176,13 +176,13 @@ export function useSubmitComplaintPublic(userId: string, password: string) {
       void queryClient.invalidateQueries({
         queryKey: ["complaintsByUserId", userId],
       });
-      void queryClient.invalidateQueries({ queryKey: ["allComplaints"] });
-      void queryClient.invalidateQueries({ queryKey: ["complaintStats"] });
+      void queryClient.invalidateQueries({ queryKey: ["adminComplaints"] });
+      void queryClient.invalidateQueries({ queryKey: ["adminComplaintStats"] });
     },
   });
 }
 
-// ─── Complaints (legacy II-based) ─────────────────────────────────────────────
+// ─── Complaints (II-based) ─────────────────────────────────────────────────────
 
 export function useGetMyComplaints() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -280,12 +280,12 @@ export function useSubmitComplaint() {
         priority,
       );
       if (result.__kind__ === "ok") return result.ok;
-      throw new Error("Failed to submit complaint");
+      throw new Error(`Failed to submit complaint: ${result.__kind__}`);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["myComplaints"] });
-      void queryClient.invalidateQueries({ queryKey: ["allComplaints"] });
-      void queryClient.invalidateQueries({ queryKey: ["complaintStats"] });
+      void queryClient.invalidateQueries({ queryKey: ["adminComplaints"] });
+      void queryClient.invalidateQueries({ queryKey: ["adminComplaintStats"] });
       void queryClient.invalidateQueries({ queryKey: ["myComplaintCount"] });
     },
   });
@@ -321,6 +321,86 @@ export function useUpdateComplaintStatus() {
       void queryClient.invalidateQueries({ queryKey: ["allComplaints"] });
       void queryClient.invalidateQueries({ queryKey: ["complaintStats"] });
       void queryClient.invalidateQueries({ queryKey: ["myComplaints"] });
+    },
+  });
+}
+
+// ─── Admin password-based APIs ───────────────────────────────────────────────
+// Use separate query keys to avoid conflicts with II-based queries
+
+export function useGetAllComplaintsAdmin() {
+  const { actor, isFetching: actorFetching } = useActor();
+  return useQuery<Complaint[]>({
+    queryKey: ["adminComplaints"],
+    queryFn: async () => {
+      if (!actor) throw new Error("Actor not available");
+      const result = (await (actor as any).getAllComplaintsAdmin("admin123")) as
+        | { __kind__: "ok"; ok: Complaint[] }
+        | { __kind__: "err"; err: string };
+      if (result.__kind__ === "ok") return result.ok;
+      throw new Error(`Failed to load complaints: ${result.__kind__}`);
+    },
+    enabled: !!actor && !actorFetching,
+    retry: 5,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+    refetchOnMount: "always",
+    refetchInterval: 30000, // auto-refresh every 30 seconds
+  });
+}
+
+export function useGetComplaintStatsAdmin() {
+  const { actor, isFetching: actorFetching } = useActor();
+  return useQuery<ComplaintStats>({
+    queryKey: ["adminComplaintStats"],
+    queryFn: async () => {
+      if (!actor) throw new Error("Actor not available");
+      const result = (await (actor as any).getComplaintStatsAdmin(
+        "admin123",
+      )) as
+        | { __kind__: "ok"; ok: ComplaintStats }
+        | { __kind__: "err"; err: string };
+      if (result.__kind__ === "ok") return result.ok;
+      throw new Error(`Failed to fetch stats: ${result.__kind__}`);
+    },
+    enabled: !!actor && !actorFetching,
+    retry: 5,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 10000),
+    refetchOnMount: "always",
+    refetchInterval: 30000,
+  });
+}
+
+export function useUpdateComplaintStatusAdmin() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      newStatus,
+      assignedTo,
+      adminResponse,
+    }: {
+      id: bigint;
+      newStatus: Type;
+      assignedTo?: string;
+      adminResponse?: string;
+    }) => {
+      if (!actor) throw new Error("Actor not available");
+      const result = (await (actor as any).updateComplaintStatusAdmin(
+        "admin123",
+        id,
+        newStatus,
+        adminResponse ?? null,
+        assignedTo ?? null,
+      )) as
+        | { __kind__: "ok"; ok: Record<string, never> }
+        | { __kind__: "err"; err: string };
+      if (result.__kind__ === "ok") return result.ok;
+      throw new Error("Failed to update complaint");
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["adminComplaints"] });
+      void queryClient.invalidateQueries({ queryKey: ["adminComplaintStats"] });
     },
   });
 }

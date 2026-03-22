@@ -50,7 +50,7 @@ export type Result_1 = { 'ok' : string } |
       { 'internalError' : null } |
       { 'unauthorized' : null }
   };
-export type Result_2 = { 'ok' : Array<Complaint> } |
+export type Result_2 = { 'ok' : null } |
   {
     'err' : { 'alreadyExists' : null } |
       { 'invalidInput' : null } |
@@ -58,7 +58,7 @@ export type Result_2 = { 'ok' : Array<Complaint> } |
       { 'internalError' : null } |
       { 'unauthorized' : null }
   };
-export type Result_3 = { 'ok' : bigint } |
+export type Result_3 = { 'ok' : Array<Complaint> } |
   {
     'err' : { 'alreadyExists' : null } |
       { 'invalidInput' : null } |
@@ -66,7 +66,7 @@ export type Result_3 = { 'ok' : bigint } |
       { 'internalError' : null } |
       { 'unauthorized' : null }
   };
-export type Result_4 = { 'ok' : ComplaintStats } |
+export type Result_4 = { 'ok' : bigint } |
   {
     'err' : { 'alreadyExists' : null } |
       { 'invalidInput' : null } |
@@ -74,7 +74,15 @@ export type Result_4 = { 'ok' : ComplaintStats } |
       { 'internalError' : null } |
       { 'unauthorized' : null }
   };
-export type Result_5 = { 'ok' : Complaint } |
+export type Result_5 = { 'ok' : ComplaintStats } |
+  {
+    'err' : { 'alreadyExists' : null } |
+      { 'invalidInput' : null } |
+      { 'notFound' : null } |
+      { 'internalError' : null } |
+      { 'unauthorized' : null }
+  };
+export type Result_6 = { 'ok' : Complaint } |
   {
     'err' : { 'alreadyExists' : null } |
       { 'invalidInput' : null } |
@@ -111,27 +119,40 @@ export type UserRole = { 'admin' : null } |
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'getAllComplaints' : ActorMethod<[], Result_2>,
+  'getAllComplaints' : ActorMethod<[], Result_3>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getComplaintById' : ActorMethod<[bigint], Result_5>,
-  'getComplaintStats' : ActorMethod<[], Result_4>,
-  'getMyComplaintCount' : ActorMethod<[], Result_3>,
-  'getMyComplaints' : ActorMethod<[], Result_2>,
+  'getComplaintById' : ActorMethod<[bigint], Result_6>,
+  'getComplaintStats' : ActorMethod<[], Result_5>,
+  'getComplaintsByUserId' : ActorMethod<[string, string], Result_3>,
+  'getMyComplaintCount' : ActorMethod<[], Result_4>,
+  'getMyComplaints' : ActorMethod<[], Result_3>,
   'getUserInfo' : ActorMethod<[], [] | [UserProfile]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'getUserProfileByUserId' : ActorMethod<[string], [] | [UserProfile]>,
+  'hasPasswordSet' : ActorMethod<[string], boolean>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isFirstTimeUser' : ActorMethod<[string], boolean>,
   'registerUser' : ActorMethod<[string, string, Type__1], Result_1>,
+  'registerUserPublic' : ActorMethod<
+    [string, string, string, Type__1],
+    Result_1
+  >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'setUserPassword' : ActorMethod<[string, string], Result_2>,
   'submitComplaint' : ActorMethod<
     [string, Type__1, Type__2, string, string, Type__3],
+    Result_1
+  >,
+  'submitComplaintPublic' : ActorMethod<
+    [string, string, string, Type__1, Type__2, string, string, Type__3],
     Result_1
   >,
   'updateComplaintStatus' : ActorMethod<
     [bigint, Type, [] | [string], [] | [string]],
     Result
   >,
+  'verifyUserPassword' : ActorMethod<[string, string], boolean>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

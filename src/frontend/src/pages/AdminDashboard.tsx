@@ -17,8 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useQueryClient } from "@tanstack/react-query";
 import {
+  AlertTriangle,
   CheckCircle2,
   ClipboardList,
   Clock,
@@ -30,19 +30,22 @@ import {
   LogOut,
   Menu,
   Pencil,
+  RefreshCw,
   School,
   Search,
   X,
   XCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { Complaint, Type, Type__2, Type__3 } from "../backend.d";
-import { Type__1 } from "../backend.d";
 import { AdminComplaintModal } from "../components/AdminComplaintModal";
 import { PriorityBadge, StatusBadge } from "../components/StatusBadge";
 import { useActor } from "../hooks/useActor";
-import { useGetAllComplaints, useGetComplaintStats } from "../hooks/useQueries";
+import {
+  useGetAllComplaintsAdmin,
+  useGetComplaintStatsAdmin,
+} from "../hooks/useQueries";
 import {
   CATEGORY_LABELS,
   PRIORITY_LABELS,
@@ -58,38 +61,15 @@ interface AdminDashboardProps {
 }
 
 export function AdminDashboard({ onLogout }: AdminDashboardProps) {
-  const { actor, isFetching } = useActor();
-  const queryClient = useQueryClient();
-  const registeredRef = useRef(false);
-  const [isAdminReady, setIsAdminReady] = useState(false);
+  const { actor } = useActor();
 
-  useEffect(() => {
-    if (!actor || isFetching || registeredRef.current) return;
-    registeredRef.current = true;
-
-    actor
-      .registerUser("admin", "Administrator", Type__1.admin)
-      .then(async () => {
-        setIsAdminReady(true);
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        queryClient.invalidateQueries({ queryKey: ["allComplaints"] });
-        queryClient.invalidateQueries({ queryKey: ["complaintStats"] });
-      })
-      .catch(async (err: unknown) => {
-        // alreadyExists is expected on subsequent logins — still refresh queries
-        const msg = err instanceof Error ? err.message : String(err);
-        if (msg.includes("alreadyExists") || msg.includes("already")) {
-          setIsAdminReady(true);
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          queryClient.invalidateQueries({ queryKey: ["allComplaints"] });
-          queryClient.invalidateQueries({ queryKey: ["complaintStats"] });
-        }
-      });
-  }, [actor, isFetching, queryClient]);
-
-  const { data: complaints = [], isLoading: complaintsLoading } =
-    useGetAllComplaints();
-  const { data: stats, isLoading: statsLoading } = useGetComplaintStats();
+  const {
+    data: complaints = [],
+    isLoading: complaintsLoading,
+    error: complaintsError,
+    refetch: refetchComplaints,
+  } = useGetAllComplaintsAdmin();
+  const { data: stats, isLoading: statsLoading } = useGetComplaintStatsAdmin();
 
   const [activeTab, setActiveTab] = useState<NavTab>("dashboard");
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(
@@ -244,8 +224,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
     </nav>
   );
 
-  // Show loading state while admin registration is in progress
-  const isInitializing = !isAdminReady && (complaintsLoading || !actor);
+  const isInitializing = !actor || complaintsLoading;
 
   return (
     <div
@@ -308,6 +287,31 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
           </div>
         </header>
 
+        {/* Error banner */}
+        {complaintsError && (
+          <div
+            data-ocid="admin_dashboard.error_state"
+            className="bg-destructive/10 border-b border-destructive/30 px-4 sm:px-6 py-3 flex items-center justify-between gap-3 shrink-0"
+          >
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <p className="text-sm font-ui font-medium">
+                Failed to load complaints. Please retry.
+              </p>
+            </div>
+            <Button
+              data-ocid="admin_dashboard.secondary_button"
+              variant="outline"
+              size="sm"
+              onClick={() => void refetchComplaints()}
+              className="font-ui text-xs border-destructive/40 text-destructive hover:bg-destructive/10 shrink-0"
+            >
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+              Retry
+            </Button>
+          </div>
+        )}
+
         {/* Content area */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {activeTab === "dashboard" && (
@@ -340,7 +344,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                       <s.icon className={`w-4 h-4 ${s.color}`} />
                     </div>
                     <p className="text-2xl font-display font-bold text-foreground">
-                      {statsLoading || isInitializing ? "—" : s.value}
+                      {statsLoading ? "—" : s.value}
                     </p>
                     <p className="text-xs text-muted-foreground font-ui mt-0.5">
                       {s.label}
@@ -364,7 +368,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
                     View all
                   </Button>
                 </div>
-                {complaintsLoading || isInitializing ? (
+                {complaintsLoading ? (
                   <div className="p-4 space-y-2">
                     {[1, 2, 3].map((i) => (
                       <Skeleton key={i} className="h-12 w-full" />
@@ -541,7 +545,7 @@ export function AdminDashboard({ onLogout }: AdminDashboardProps) {
 
               {/* Table */}
               <div className="bg-card border border-border rounded-xl shadow-card overflow-hidden">
-                {complaintsLoading || isInitializing ? (
+                {isInitializing ? (
                   <div className="p-4 space-y-3">
                     {[1, 2, 3, 4, 5].map((i) => (
                       <Skeleton

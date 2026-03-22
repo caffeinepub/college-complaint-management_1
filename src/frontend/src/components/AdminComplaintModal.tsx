@@ -21,7 +21,7 @@ import { CheckCircle2, Hash, Loader2, Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { type Complaint, Type } from "../backend.d";
-import { useUpdateComplaintStatus } from "../hooks/useQueries";
+import { useUpdateComplaintStatusAdmin } from "../hooks/useQueries";
 import {
   CATEGORY_LABELS,
   PRIORITY_LABELS,
@@ -47,7 +47,7 @@ export function AdminComplaintModal({
   const [adminResponse, setAdminResponse] = useState("");
   const [saved, setSaved] = useState(false);
 
-  const updateMutation = useUpdateComplaintStatus();
+  const updateMutation = useUpdateComplaintStatusAdmin();
 
   useEffect(() => {
     if (complaint) {

@@ -56,7 +56,7 @@ export const Complaint = IDL.Record({
   'priority' : Type__3,
   'adminResponse' : IDL.Opt(IDL.Text),
 });
-export const Result_2 = IDL.Variant({
+export const Result_3 = IDL.Variant({
   'ok' : IDL.Vec(Complaint),
   'err' : IDL.Variant({
     'alreadyExists' : IDL.Null,
@@ -71,7 +71,7 @@ export const UserProfile = IDL.Record({
   'name' : IDL.Text,
   'role' : Type__1,
 });
-export const Result_5 = IDL.Variant({
+export const Result_6 = IDL.Variant({
   'ok' : Complaint,
   'err' : IDL.Variant({
     'alreadyExists' : IDL.Null,
@@ -88,7 +88,7 @@ export const ComplaintStats = IDL.Record({
   'open' : IDL.Nat,
   'inProgress' : IDL.Nat,
 });
-export const Result_4 = IDL.Variant({
+export const Result_5 = IDL.Variant({
   'ok' : ComplaintStats,
   'err' : IDL.Variant({
     'alreadyExists' : IDL.Null,
@@ -98,7 +98,7 @@ export const Result_4 = IDL.Variant({
     'unauthorized' : IDL.Null,
   }),
 });
-export const Result_3 = IDL.Variant({
+export const Result_4 = IDL.Variant({
   'ok' : IDL.Nat,
   'err' : IDL.Variant({
     'alreadyExists' : IDL.Null,
@@ -110,6 +110,16 @@ export const Result_3 = IDL.Variant({
 });
 export const Result_1 = IDL.Variant({
   'ok' : IDL.Text,
+  'err' : IDL.Variant({
+    'alreadyExists' : IDL.Null,
+    'invalidInput' : IDL.Null,
+    'notFound' : IDL.Null,
+    'internalError' : IDL.Null,
+    'unauthorized' : IDL.Null,
+  }),
+});
+export const Result_2 = IDL.Variant({
+  'ok' : IDL.Null,
   'err' : IDL.Variant({
     'alreadyExists' : IDL.Null,
     'invalidInput' : IDL.Null,
@@ -132,25 +142,56 @@ export const Result = IDL.Variant({
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'getAllComplaints' : IDL.Func([], [Result_2], ['query']),
+  'getAllComplaints' : IDL.Func([], [Result_3], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getComplaintById' : IDL.Func([IDL.Nat], [Result_5], ['query']),
-  'getComplaintStats' : IDL.Func([], [Result_4], ['query']),
-  'getMyComplaintCount' : IDL.Func([], [Result_3], ['query']),
-  'getMyComplaints' : IDL.Func([], [Result_2], ['query']),
+  'getComplaintById' : IDL.Func([IDL.Nat], [Result_6], ['query']),
+  'getComplaintStats' : IDL.Func([], [Result_5], ['query']),
+  'getComplaintsByUserId' : IDL.Func(
+      [IDL.Text, IDL.Text],
+      [Result_3],
+      ['query'],
+    ),
+  'getMyComplaintCount' : IDL.Func([], [Result_4], ['query']),
+  'getMyComplaints' : IDL.Func([], [Result_3], ['query']),
   'getUserInfo' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
+  'getUserProfileByUserId' : IDL.Func(
+      [IDL.Text],
+      [IDL.Opt(UserProfile)],
+      ['query'],
+    ),
+  'hasPasswordSet' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isFirstTimeUser' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
   'registerUser' : IDL.Func([IDL.Text, IDL.Text, Type__1], [Result_1], []),
+  'registerUserPublic' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, Type__1],
+      [Result_1],
+      [],
+    ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'setUserPassword' : IDL.Func([IDL.Text, IDL.Text], [Result_2], []),
   'submitComplaint' : IDL.Func(
       [IDL.Text, Type__1, Type__2, IDL.Text, IDL.Text, Type__3],
+      [Result_1],
+      [],
+    ),
+  'submitComplaintPublic' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        Type__1,
+        Type__2,
+        IDL.Text,
+        IDL.Text,
+        Type__3,
+      ],
       [Result_1],
       [],
     ),
@@ -159,6 +200,7 @@ export const idlService = IDL.Service({
       [Result],
       [],
     ),
+  'verifyUserPassword' : IDL.Func([IDL.Text, IDL.Text], [IDL.Bool], ['query']),
 });
 
 export const idlInitArgs = [];
@@ -212,7 +254,7 @@ export const idlFactory = ({ IDL }) => {
     'priority' : Type__3,
     'adminResponse' : IDL.Opt(IDL.Text),
   });
-  const Result_2 = IDL.Variant({
+  const Result_3 = IDL.Variant({
     'ok' : IDL.Vec(Complaint),
     'err' : IDL.Variant({
       'alreadyExists' : IDL.Null,
@@ -227,7 +269,7 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
     'role' : Type__1,
   });
-  const Result_5 = IDL.Variant({
+  const Result_6 = IDL.Variant({
     'ok' : Complaint,
     'err' : IDL.Variant({
       'alreadyExists' : IDL.Null,
@@ -244,7 +286,7 @@ export const idlFactory = ({ IDL }) => {
     'open' : IDL.Nat,
     'inProgress' : IDL.Nat,
   });
-  const Result_4 = IDL.Variant({
+  const Result_5 = IDL.Variant({
     'ok' : ComplaintStats,
     'err' : IDL.Variant({
       'alreadyExists' : IDL.Null,
@@ -254,7 +296,7 @@ export const idlFactory = ({ IDL }) => {
       'unauthorized' : IDL.Null,
     }),
   });
-  const Result_3 = IDL.Variant({
+  const Result_4 = IDL.Variant({
     'ok' : IDL.Nat,
     'err' : IDL.Variant({
       'alreadyExists' : IDL.Null,
@@ -266,6 +308,16 @@ export const idlFactory = ({ IDL }) => {
   });
   const Result_1 = IDL.Variant({
     'ok' : IDL.Text,
+    'err' : IDL.Variant({
+      'alreadyExists' : IDL.Null,
+      'invalidInput' : IDL.Null,
+      'notFound' : IDL.Null,
+      'internalError' : IDL.Null,
+      'unauthorized' : IDL.Null,
+    }),
+  });
+  const Result_2 = IDL.Variant({
+    'ok' : IDL.Null,
     'err' : IDL.Variant({
       'alreadyExists' : IDL.Null,
       'invalidInput' : IDL.Null,
@@ -288,25 +340,56 @@ export const idlFactory = ({ IDL }) => {
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'getAllComplaints' : IDL.Func([], [Result_2], ['query']),
+    'getAllComplaints' : IDL.Func([], [Result_3], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getComplaintById' : IDL.Func([IDL.Nat], [Result_5], ['query']),
-    'getComplaintStats' : IDL.Func([], [Result_4], ['query']),
-    'getMyComplaintCount' : IDL.Func([], [Result_3], ['query']),
-    'getMyComplaints' : IDL.Func([], [Result_2], ['query']),
+    'getComplaintById' : IDL.Func([IDL.Nat], [Result_6], ['query']),
+    'getComplaintStats' : IDL.Func([], [Result_5], ['query']),
+    'getComplaintsByUserId' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [Result_3],
+        ['query'],
+      ),
+    'getMyComplaintCount' : IDL.Func([], [Result_4], ['query']),
+    'getMyComplaints' : IDL.Func([], [Result_3], ['query']),
     'getUserInfo' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
+    'getUserProfileByUserId' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(UserProfile)],
+        ['query'],
+      ),
+    'hasPasswordSet' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isFirstTimeUser' : IDL.Func([IDL.Text], [IDL.Bool], ['query']),
     'registerUser' : IDL.Func([IDL.Text, IDL.Text, Type__1], [Result_1], []),
+    'registerUserPublic' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, Type__1],
+        [Result_1],
+        [],
+      ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'setUserPassword' : IDL.Func([IDL.Text, IDL.Text], [Result_2], []),
     'submitComplaint' : IDL.Func(
         [IDL.Text, Type__1, Type__2, IDL.Text, IDL.Text, Type__3],
+        [Result_1],
+        [],
+      ),
+    'submitComplaintPublic' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          Type__1,
+          Type__2,
+          IDL.Text,
+          IDL.Text,
+          Type__3,
+        ],
         [Result_1],
         [],
       ),
@@ -314,6 +397,11 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Nat, Type, IDL.Opt(IDL.Text), IDL.Opt(IDL.Text)],
         [Result],
         [],
+      ),
+    'verifyUserPassword' : IDL.Func(
+        [IDL.Text, IDL.Text],
+        [IDL.Bool],
+        ['query'],
       ),
   });
 };

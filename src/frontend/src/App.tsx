@@ -1,6 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Type__1 } from "./backend.d";
 import { useActor } from "./hooks/useActor";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
@@ -28,8 +28,9 @@ function LoadingScreen() {
 function AppInner() {
   const [session, setSession] = useState<Session | null>(null);
   const [isSessionLoaded, setIsSessionLoaded] = useState(false);
+  const isLoggingOutRef = useRef(false);
   const { actor, isFetching } = useActor();
-  const { identity } = useInternetIdentity();
+  const { identity, clear: clearII } = useInternetIdentity();
 
   // Load session from localStorage on mount, or restore from II profile
   useEffect(() => {
@@ -51,13 +52,14 @@ function AppInner() {
   useEffect(() => {
     if (!isSessionLoaded) return;
     if (session) return;
+    if (isLoggingOutRef.current) return;
     if (!identity || identity.getPrincipal().isAnonymous()) return;
     if (!actor || isFetching) return;
 
     void (async () => {
       try {
         const profile = await actor.getCallerUserProfile();
-        if (profile) {
+        if (profile && !isLoggingOutRef.current) {
           const restored: Session = {
             userId: profile.userId,
             userType: profile.role,
@@ -73,12 +75,16 @@ function AppInner() {
   }, [isSessionLoaded, session, identity, actor, isFetching]);
 
   const handleLogin = (newSession: Session) => {
+    isLoggingOutRef.current = false;
     setSession(newSession);
   };
 
   const handleLogout = () => {
+    isLoggingOutRef.current = true;
     localStorage.removeItem("aditya_session");
     setSession(null);
+    // Also clear Internet Identity so the auto-restore doesn't kick in
+    clearII();
   };
 
   if (!isSessionLoaded) {

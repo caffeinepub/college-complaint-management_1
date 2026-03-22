@@ -9,14 +9,21 @@ export interface None {
 export type Option<T> = Some<T> | None;
 export type Result_2 = {
     __kind__: "ok";
-    ok: Array<Complaint>;
+    ok: null;
+} | {
+    __kind__: "err";
+    err: Variant_alreadyExists_invalidInput_notFound_internalError_unauthorized;
+};
+export type Result_6 = {
+    __kind__: "ok";
+    ok: Complaint;
 } | {
     __kind__: "err";
     err: Variant_alreadyExists_invalidInput_notFound_internalError_unauthorized;
 };
 export type Result_5 = {
     __kind__: "ok";
-    ok: Complaint;
+    ok: ComplaintStats;
 } | {
     __kind__: "err";
     err: Variant_alreadyExists_invalidInput_notFound_internalError_unauthorized;
@@ -30,22 +37,21 @@ export type Result_1 = {
 };
 export type Result_4 = {
     __kind__: "ok";
-    ok: ComplaintStats;
+    ok: bigint;
 } | {
     __kind__: "err";
     err: Variant_alreadyExists_invalidInput_notFound_internalError_unauthorized;
 };
 export type Result = {
     __kind__: "ok";
-    ok: {
-    };
+    ok: {};
 } | {
     __kind__: "err";
     err: Variant_alreadyExists_invalidInput_notFound_internalError_unauthorized;
 };
 export type Result_3 = {
     __kind__: "ok";
-    ok: bigint;
+    ok: Array<Complaint>;
 } | {
     __kind__: "err";
     err: Variant_alreadyExists_invalidInput_notFound_internalError_unauthorized;
@@ -119,19 +125,29 @@ export enum Variant_alreadyExists_invalidInput_notFound_internalError_unauthoriz
 }
 export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    getAllComplaints(): Promise<Result_2>;
+    getAllComplaints(): Promise<Result_3>;
+    getAllComplaintsAdmin(adminPassword: string): Promise<Result_3>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
-    getComplaintById(id: bigint): Promise<Result_5>;
-    getComplaintStats(): Promise<Result_4>;
-    getMyComplaintCount(): Promise<Result_3>;
-    getMyComplaints(): Promise<Result_2>;
+    getComplaintById(id: bigint): Promise<Result_6>;
+    getComplaintStats(): Promise<Result_5>;
+    getComplaintStatsAdmin(adminPassword: string): Promise<Result_5>;
+    getComplaintsByUserId(userId: string, password: string): Promise<Result_3>;
+    getMyComplaintCount(): Promise<Result_4>;
+    getMyComplaints(): Promise<Result_3>;
     getUserInfo(): Promise<UserProfile | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
+    getUserProfileByUserId(userId: string): Promise<UserProfile | null>;
+    hasPasswordSet(userId: string): Promise<boolean>;
     isCallerAdmin(): Promise<boolean>;
     isFirstTimeUser(userId: string): Promise<boolean>;
     registerUser(userId: string, name: string, userType: Type__1): Promise<Result_1>;
+    registerUserPublic(userId: string, name: string, password: string, userType: Type__1): Promise<Result_1>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
+    setUserPassword(userId: string, password: string): Promise<Result_2>;
     submitComplaint(submitterName: string, submitterType: Type__1, category: Type__2, title: string, description: string, priority: Type__3): Promise<Result_1>;
+    submitComplaintPublic(userId: string, password: string, submitterName: string, submitterType: Type__1, category: Type__2, title: string, description: string, priority: Type__3): Promise<Result_1>;
     updateComplaintStatus(complaintId: bigint, newStatus: Type, adminResponse: string | null, assignedTo: string | null): Promise<Result>;
+    updateComplaintStatusAdmin(adminPassword: string, complaintId: bigint, newStatus: Type, adminResponse: string | null, assignedTo: string | null): Promise<Result>;
+    verifyUserPassword(userId: string, password: string): Promise<boolean>;
 }
